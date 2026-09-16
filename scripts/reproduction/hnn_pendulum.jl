@@ -2,7 +2,10 @@
 using GeometricMachineLearning
 
 # this contains the Hamiltonian and the functions for generating the training data
-include("pendulum.jl")
+include("../utilities/pendulum.jl")
+
+# `smoke_size(full, smoke)` returns the second when GML_SMOKE is set. See scripts/README.md.
+include("../utilities/smoke.jl")
 
 # layer dimension/width
 const ld = 5
@@ -14,7 +17,7 @@ const ln = 3
 const ninput = 2
 
 # number of epochs
-const nepochs = 2000
+const nepochs = smoke_size(2000, 2)
 
 # `StandardHamiltonianArchitecture` is named explicitly, because calling the abstract
 # `HamiltonianArchitecture` warns and defaults to it. The constructor takes
@@ -37,5 +40,5 @@ optimizer = Optimizer(Adam(), nn; step_size = 1e-3)
 total_loss = optimizer(nn, dl, Batch(10), nepochs, loss; show_progress = true)
 
 # plot results
-include("plots.jl")
+include("../utilities/plots.jl")
 plot_hnn(H, x -> only(nn(x)), total_loss; filename = "hnn_pendulum.png")
