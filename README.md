@@ -12,7 +12,17 @@ The package provides the architecture `StandardHamiltonianArchitecture`, the los
 vector field data) and `SymplecticEulerLoss` (for pairs of states one timestep apart), and a
 `SymbolicPullback` that computes the gradient of `HNNLoss` symbolically. The networks train with
 the data loader, the training loop and the optimisers of
-[GeometricMachineLearning.jl](https://github.com/JuliaGNI/GeometricMachineLearning.jl):
+[GeometricMachineLearning.jl](https://github.com/JuliaGNI/GeometricMachineLearning.jl).
+
+The package does not depend on GeometricMachineLearning, so add it to your environment yourself.
+Until GeometricMachineLearning 0.9 is registered, add it from its `main` branch:
+
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "main")
+```
+
+Then train a network:
 
 ```julia
 using HamiltonianNeuralNetworks

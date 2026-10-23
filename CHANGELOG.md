@@ -18,7 +18,8 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   method, with `SymbolicPullback` re-exported from SymbolicNeuralNetworks. `git log --follow` of
   each moved file reaches its GML history.
 * **Training goes through GeometricMachineLearning by name.** The package does not depend on
-  GML; the tests, the manual and the scripts load `DataLoader`, `Batch`, `train!` and the
+  GML, so a user adds it to their own environment, from GML's `main` branch until 0.9.0 is
+  registered. The tests, the manual and the scripts load `DataLoader`, `Batch`, `train!` and the
   optimisers with `using GeometricMachineLearning: …`, never with a bare `using`, because GML
   exports the same names for its own copy of the architecture until it removes it. Until GML
   0.9.0 is registered, the test, docs and scripts environments take GML from its `main` branch

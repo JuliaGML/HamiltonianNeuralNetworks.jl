@@ -68,7 +68,8 @@ verdict, the elapsed seconds and the captured output.
 function run_script(relative::AbstractString; smoke::Bool, timeout::Real)
     path = joinpath(ROOT, relative)
     environment = copy(ENV)
-    smoke && (environment["HNN_SMOKE"] = "1")
+    # A full run must not inherit `HNN_SMOKE` from the shell that started the driver.
+    smoke ? (environment["HNN_SMOKE"] = "1") : delete!(environment, "HNN_SMOKE")
     command = Cmd(`$(Base.julia_cmd()) --startup-file=no --project=$PROJECT $path`;
         dir = dirname(path), env = environment)
 
