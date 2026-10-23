@@ -1,7 +1,7 @@
 # Train a Hamiltonian neural network on the pendulum and plot what it learned.
 using HamiltonianNeuralNetworks
-using GeometricMachineLearning: Adam, Batch, CPU, DataLoader, NeuralNetwork, TrainingOptimizer,
-                                train!
+using GeometricMachineLearning: Adam, Batch, CPU, DataLoader, NeuralNetwork,
+                                TrainingOptimizer, train!
 
 # this contains the Hamiltonian and the functions for generating the training data
 include("../utilities/pendulum.jl")

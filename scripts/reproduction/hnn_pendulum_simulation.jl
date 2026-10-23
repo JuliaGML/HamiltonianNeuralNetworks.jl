@@ -6,8 +6,8 @@
 # two questions come apart: a network can match `H` closely on the training grid and still drift in
 # energy over a long integration, and no test in the suite checks the second.
 using HamiltonianNeuralNetworks
-using GeometricMachineLearning: Adam, Batch, CPU, DataLoader, NeuralNetwork, TrainingOptimizer,
-                                train!
+using GeometricMachineLearning: Adam, Batch, CPU, DataLoader, NeuralNetwork,
+                                TrainingOptimizer, train!
 using GeometricIntegrators: ODEProblem, ImplicitMidpoint, integrate
 
 # the Hamiltonian, its symplectic gradient, and the training data
