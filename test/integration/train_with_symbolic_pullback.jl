@@ -11,7 +11,7 @@ include("../helpers/leaves.jl")
 # `train!` steps with the gradient of the `loss` it is given. One epoch of one minibatch with
 # `GradientMethod` moves the parameters by `-η` times the symbolic gradient at `p₀`, and the history
 # is the pullback's loss value. `test/pullbacks/symbolic_hnn_pullback.jl` tests the gradient itself
-# against `ZygotePullback`'s (issue #343).
+# against `ZygotePullback`'s (GeometricMachineLearning.jl issue #343).
 @testset "train! trains a Hamiltonian network with SymbolicPullback ($T)" for T in REAL_ELTYPES
     Random.seed!(9)
     arch = StandardHamiltonianArchitecture(2, 4, 1, AbstractNeuralNetworks.SigmoidActivation())
@@ -45,8 +45,7 @@ end
 # Not numeric: the elements selected are loss types, not values, so this is not run over
 # `REAL_ELTYPES`.
 @testset "train!'s default losses" begin
-    # a Hamiltonian network, a transformer with a `Batch{:FeedForward}` and an unknown architecture
-    # all reach the fallback
+    # a Hamiltonian network reaches the fallback
     for (arch, batch) in ((StandardHamiltonianArchitecture(2, 4, 1), Batch(4)),)
         @test_throws ArgumentError NetworkLoss(arch, batch)
     end

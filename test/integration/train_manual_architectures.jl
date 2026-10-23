@@ -6,10 +6,7 @@ import Random
 
 include("../helpers/eltypes.jl")
 
-# Each architecture that the manual trains, with the data shape and the batch its tutorial uses. The
-# list holds a `SymmetricMatrix` leaf (`LASympNet`, `LinearSymplecticTransformer`), the strictly
-# triangular leaves (`VolumePreservingFeedForward`, `VolumePreservingTransformer`), a Stiefel leaf
-# (`SymplecticAutoencoder`), and the three `Chain`s of the volume-preserving-attention tutorial.
+# Each architecture that the manual trains, with the data shape and the batch its tutorial uses.
 # The last place holds the loss; `nothing` trains on the default loss.
 function manual_architectures(T)
     hnn = StandardHamiltonianArchitecture(2, 4)
