@@ -3,8 +3,8 @@
 # `scripts/` is three directories with stated purposes:
 #
 #   verification/  checks that establish a mathematical claim about the package. Run in full.
-#   reproduction/  the runs that produce the manual's figures. Run in smoke mode, at the small
-#                  sizes `utilities/smoke.jl` returns.
+#   reproduction/  the training runs that reproduce a result, with its figure. Run in smoke mode,
+#                  at the small sizes `utilities/smoke.jl` returns.
 #   utilities/     what the other two include. Never run on its own.
 #
 # Every `.jl` file under `verification/` and `reproduction/` is an entry point and is run here,

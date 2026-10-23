@@ -5,7 +5,7 @@ Three directories, each with one purpose.
 | directory | holds | how CI runs it |
 |:--|:--|:--|
 | `verification/` | checks that establish a mathematical claim about the package | in full |
-| `reproduction/` | the runs that produce the manual's figures | in smoke mode |
+| `reproduction/` | the training runs that reproduce a result, with its figure | in smoke mode |
 | `utilities/` | what the other two include | not run |
 
 `scripts/runscripts.jl` is the driver, and `.github/workflows/Scripts.yml` is the job that calls
