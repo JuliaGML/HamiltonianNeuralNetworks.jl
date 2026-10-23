@@ -26,6 +26,4 @@ loss_history = train!(nn, TrainingOptimizer(nn.params; algorithm = Adam()), dl, 
 ```
 
 The [tutorial](https://juliagml.github.io/HamiltonianNeuralNetworks.jl/latest/tutorials/hamiltonian_neural_network/)
-trains on vector field data and on phase space data. The package comes from
-GeometricMachineLearning.jl, and `git log --follow` of each file it moved from there reaches its
-history in GML.
+trains on vector field data and on phase space data.

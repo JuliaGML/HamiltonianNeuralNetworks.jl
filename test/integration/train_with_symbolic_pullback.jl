@@ -42,11 +42,8 @@ end
 # Without `loss`, `train!` trains on the loss that matches the architecture and the batch, and on
 # any other combination it says that it needs one.
 #
-# Not numeric: the elements selected are loss types, not values, so this is not run over
-# `REAL_ELTYPES`.
+# Not numeric: the call selects a loss type, not a value, so this is not run over `REAL_ELTYPES`.
 @testset "train!'s default losses" begin
     # a Hamiltonian network reaches the fallback
-    for (arch, batch) in ((StandardHamiltonianArchitecture(2, 4, 1), Batch(4)),)
-        @test_throws ArgumentError NetworkLoss(arch, batch)
-    end
+    @test_throws ArgumentError NetworkLoss(StandardHamiltonianArchitecture(2, 4, 1), Batch(4))
 end

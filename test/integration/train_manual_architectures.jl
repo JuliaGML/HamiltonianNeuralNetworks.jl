@@ -6,8 +6,7 @@ import Random
 
 include("../helpers/eltypes.jl")
 
-# Each architecture that the manual trains, with the data shape and the batch its tutorial uses.
-# The last place holds the loss; `nothing` trains on the default loss.
+# Each architecture that the manual trains, with data of the shape and the loss its tutorial uses.
 function manual_architectures(T)
     hnn = StandardHamiltonianArchitecture(2, 4)
     (("StandardHamiltonianArchitecture", hnn,
@@ -22,9 +21,7 @@ end
             nn = NeuralNetwork(arch, T)
             p₀ = deepcopy(params(nn))
             opt = TrainingOptimizer(nn.params; algorithm = Adam())
-            history = loss === nothing ?
-                      train!(nn, opt, dl, batch, 2; show_progress = false) :
-                      train!(nn, opt, dl, batch, 2; loss, show_progress = false)
+            history = train!(nn, opt, dl, batch, 2; loss, show_progress = false)
             @test length(history) == 2
             @test eltype(history) === T
             @test all(isfinite, history)

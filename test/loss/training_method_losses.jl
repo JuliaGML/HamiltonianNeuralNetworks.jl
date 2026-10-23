@@ -85,7 +85,8 @@ function test_symplectic_euler_loss_vanishes_on_its_own_step(
 
     # A trajectory that is *not* the method's own step must not pass, so the assertion above is
     # not vacuous.
-    @test loss(params(nn), input, output + T(0.1) * randn(T, size(output))) > 1.0e-3
+    @test loss(params(nn), input, output + T(0.1) * randn(T, size(output))) >
+          100 * eps(T) / Δt
 end
 
 for T in REAL_ELTYPES
