@@ -6,11 +6,11 @@ using NeuralNetworkParameters: NetworkParameters
 using Test
 import Random
 
-# A loss's `ps` is a `NetworkParameters`, so a bare `NamedTuple` reaches no method of a
-# loss of this package rather than a silently different gradient: which of the two AD hands the loss is what an
-# untyped argument hides. The four-argument methods of a training loss carry the same annotation,
-# and their model slot is reached by `AbstractNeuralNetworks`' own untyped fallback where the wrapper
-# is missing.
+# A loss's `ps` is a `NetworkParameters`, so a bare `NamedTuple` reaches no method of a loss of
+# this package rather than a silently different gradient: which of the two AD hands the loss is
+# what an untyped argument hides. The four-argument methods of a training loss carry the same
+# annotation, and their model slot is reached by `AbstractNeuralNetworks`' own untyped fallback
+# where the wrapper is missing.
 #
 # Not numeric: the element type of the data does not reach the method selection, so this is not run
 # over `REAL_ELTYPES`.
