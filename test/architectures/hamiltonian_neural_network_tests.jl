@@ -1,10 +1,12 @@
-using GeometricMachineLearning
+using HamiltonianNeuralNetworks
+using GeometricMachineLearning: DataLoader, NetworkLoss, NetworkParameters, NeuralNetwork
+import AbstractNeuralNetworks
 using Test
 using Zygote
 import Random
 Random.seed!(1234)
 
-const GMLA = GeometricMachineLearning.Activation
+const GMLA = AbstractNeuralNetworks.Activation
 function allocate_network_and_data_loader(dim::Integer, width::Integer, nhidden::Integer, activation::GMLA)
     arch = StandardHamiltonianArchitecture(dim, width, nhidden, activation)
     loss = HNNLoss(arch)
@@ -20,7 +22,7 @@ This tests if we can call the HNN loss.
 function test_hnn_loss(dim::Integer = 2,
         width::Integer = dim,
         nhidden::Integer = 1,
-        activation::GMLA = GeometricMachineLearning.SigmoidActivation())
+        activation::GMLA = AbstractNeuralNetworks.SigmoidActivation())
     nn, loss, dl = allocate_network_and_data_loader(dim, width, nhidden, activation)
     @test typeof(loss(nn.params, dl.input, dl.output)) <: Real
     @test typeof(loss) <: NetworkLoss
@@ -34,7 +36,7 @@ This tests if we can differentiate the HNN loss.
 function test_hnn_loss_derivative(dim::Integer = 2,
         width::Integer = dim,
         nhidden::Integer = 1,
-        activation::GMLA = GeometricMachineLearning.SigmoidActivation())
+        activation::GMLA = AbstractNeuralNetworks.SigmoidActivation())
     nn, loss, dl = allocate_network_and_data_loader(dim, width, nhidden, activation)
     dp = Zygote.gradient(ps -> loss(ps, dl.input, dl.output), nn.params)[1]
     @test typeof(dp) <: NetworkParameters
@@ -49,7 +51,7 @@ This tests if we can build the symbolic pullback of the HNN loss and evaluate it
 function test_hnn_symbolic_pullback(dim::Integer = 2,
         width::Integer = dim,
         nhidden::Integer = 1,
-        activation::GMLA = GeometricMachineLearning.SigmoidActivation())
+        activation::GMLA = AbstractNeuralNetworks.SigmoidActivation())
     arch = StandardHamiltonianArchitecture(dim, width, nhidden, activation)
     nn = NeuralNetwork(arch)
     pb = SymbolicPullback(arch)
