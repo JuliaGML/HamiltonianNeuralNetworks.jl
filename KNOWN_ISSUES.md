@@ -1,0 +1,46 @@
+# Known issues
+
+What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
+
+## C. Follow-ups and cleanups
+
+### C7 · `SymbolicPullback(::HamiltonianArchitecture)` reaches one private SymbolicNeuralNetworks name.
+
+- **location:** `src/pullbacks/symbolic_hnn_pullback.jl`
+- **kind:** upstream
+- **found:** 2026-08-16, in GeometricMachineLearning, whose `KNOWN_ISSUES.md` holds it under the same ID
+- **evidence:**
+  `SymbolicNeuralNetworks.SymbolicPullback(nn, loss)` cannot be used, because it sizes the symbolic
+  target of the loss with `output_dimension(nn.model)`, which for a Hamiltonian network is `1` — the
+  scalar Hamiltonian — while `HNNLoss` compares against the Hamiltonian *vector field*, which has the
+  dimension of the network's input. The construction therefore reaches
+  `SymbolicNeuralNetworks.symbolic_parameter_gradient`, which no exported name replaces:
+  `flat_parameter_gradient` is flat, so it wants an `unflatten` per step, and `ParameterGradient` is
+  not used. The pullback is the upstream type `SymbolicPullback(loss, fun)`, with a call method of
+  this package for `SymbolicPullback{<:HNNLoss, <:_HNNParameterGradient}` that is more specific
+  than the upstream call in the pullback and the parameters, and as specific in the data. That
+  private name is the one an upstream refactor breaks.
+
+## Found late
+
+### K15 · `HNNLoss` and `SymbolicPullback(arch)` accept `(q, p)` data in their signatures and fail on it inside the generated vector field.
+
+- **location:** `src/loss/hnn_loss.jl:33`
+- **kind:** found late
+- **found:** GeometricMachineLearning #344, review round 2 (2026-10-14), whose `KNOWN_ISSUES.md` holds it under the same ID; the `HNNLoss` signatures are older than that pull request
+- **evidence:**
+  `HNNLoss`'s two functors (`src/loss/hnn_loss.jl:31-42`) and the call method of
+  `SymbolicPullback(arch)` (`src/pullbacks/symbolic_hnn_pullback.jl:38-40`) type the data as
+  `ArrayOrNamedTuple`, which admits a `(q = …, p = …)` `NamedTuple`. The loss hands that data to
+  the generated `hvf`, which calls `ndims` on it. With `(q = randn(1, 5), p = randn(1, 5))` as
+  input and output, the symbolic pullback, `HNNLoss` and `ZygotePullback(HNNLoss(arch))` all
+  raise:
+
+  ```
+  MethodError: no method matching ndims(::@NamedTuple{q::Matrix{Float64}, p::Matrix{Float64}})
+  ```
+
+  Narrowing the pullback's method alone changes nothing: the data then reaches the upstream
+  `SymbolicPullback` call, which also accepts a `NamedTuple` and fails in the same place. The fix
+  belongs with the data signatures of the losses as a whole: either each loss accepts only the data
+  its vector field can take, or `(q, p)` data is converted before it reaches the field.
