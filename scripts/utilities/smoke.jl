@@ -2,7 +2,7 @@
 #
 # A reproduction script states two sizes for every constant that costs time: the size the committed
 # result was produced with, and a size that exercises the same code path in seconds. `smoke_size`
-# returns the second when `GML_SMOKE` is set in the environment, which is what lets the CI job in
+# returns the second when `HNN_SMOKE` is set in the environment, which is what lets the CI job in
 # `.github/workflows/Scripts.yml` prove that a script still runs end to end without training
 # anything. A smoke run establishes that the script executes, and nothing about the result.
 #
@@ -12,6 +12,6 @@
 """
     smoke_size(full, smoke)
 
-Return `smoke` when `GML_SMOKE` is set in the environment and `full` otherwise.
+Return `smoke` when `HNN_SMOKE` is set in the environment and `full` otherwise.
 """
-smoke_size(full, smoke) = haskey(ENV, "GML_SMOKE") ? smoke : full
+smoke_size(full, smoke) = haskey(ENV, "HNN_SMOKE") ? smoke : full
