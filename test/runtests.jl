@@ -8,7 +8,7 @@ if "core" in GROUPS
     @safetestset "Symplectic Euler loss" include("loss/training_method_losses.jl")
     @safetestset "SymbolicPullback of HNNLoss is the gradient of the batched loss" include("pullbacks/symbolic_hnn_pullback.jl")
     @safetestset "A loss takes a NetworkParameters" include("loss/losses.jl")
-    @safetestset "train! with a Hamiltonian network" include("data_loader/train.jl")
+    @safetestset "train! with a Hamiltonian network" include("integration/train_with_symbolic_pullback.jl")
 end
 if "slow" in GROUPS
     @safetestset "train! trains every architecture of the manual" include("integration/train_manual_architectures.jl")
