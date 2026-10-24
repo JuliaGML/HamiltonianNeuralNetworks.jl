@@ -1,11 +1,11 @@
 # [Hamiltonian Neural Network](@id hnn_architecture)
 
-The Hamiltonian Neural Network (HNN) [greydanus2019hamiltonian](@cite) aims at building a [Hamiltonian vector field](@ref "Symplectic Systems")  with a neural network. We recall that a *canonical Hamiltonian vector field* on ``\mathbb{R}^{2d}`` is one that can be written as:
+The Hamiltonian Neural Network (HNN) [greydanus2019hamiltonian](@cite) aims at building a [Hamiltonian vector field](@extref GeometricMachineLearning Symplectic-Systems)  with a neural network. We recall that a *canonical Hamiltonian vector field* on ``\mathbb{R}^{2d}`` is one that can be written as:
 
 ```math
     X_H(z) = \mathbb{J}_{2d}\nabla_zH,
 ```
-where ``\mathbb{J}_{2d}`` is the [`PoissonTensor`](@ref). The idea behind a Hamiltonian neural network is to learn a vector field of this form, i.e. to learn:
+where ``\mathbb{J}_{2d}`` is the [`PoissonTensor`](@extref GeometricMachineLearning.PoissonTensor) of GeometricMachineLearning. The idea behind a Hamiltonian neural network is to learn a vector field of this form, i.e. to learn:
 
 ```math
     X_{\mathcal{NN}}(z) = \mathbb{J}_{2d}\nabla_z\mathcal{NN},
@@ -36,7 +36,7 @@ Note that this integrator is implicit in general.
 
 Here the derivatives (i.e. vector field data) ``\dot{q}_i^{(t)}`` and ``\dot{p}_i^{(t)}`` are approximated with finite differences: 
 
-A loss of this kind is [`GeometricMachineLearning.SymplecticEulerLoss`](@ref). Its `:B` variant evaluates the Hamiltonian vector field at ``(q^{(t)}, p^{(t+1)})``, as above, and its `:A` variant at ``(q^{(t+1)}, p^{(t)})``; it compares that field against the finite difference, with the sign convention ``X_H = (\partial{}H/\partial{}p, -\partial{}H/\partial{}q)``.
+A loss of this kind is [`HamiltonianNeuralNetworks.SymplecticEulerLoss`](@ref). Its `:B` variant evaluates the Hamiltonian vector field at ``(q^{(t)}, p^{(t+1)})``, as above, and its `:A` variant at ``(q^{(t+1)}, p^{(t)})``; it compares that field against the finite difference, with the sign convention ``X_H = (\partial{}H/\partial{}p, -\partial{}H/\partial{}q)``.
 
 !!! warning
     The displayed formula is not what that loss computes. Under the convention above, the second term reads ``-(q_i^{t+1} - q_i^{(t)})/\Delta{}t``, and the formula has a plus. The sign here predates the implementation and is left as it stands; the implementation is the one to read.
@@ -47,13 +47,13 @@ A loss of this kind is [`GeometricMachineLearning.SymplecticEulerLoss`](@ref). I
 ## Library Functions
 
 ```@docs
-GeometricMachineLearning.hamiltonian_vector_field(::HamiltonianArchitecture)
-GeometricMachineLearning.HamiltonianArchitecture
-GeometricMachineLearning.StandardHamiltonianArchitecture
-GeometricMachineLearning.HNNLoss
-GeometricMachineLearning.SymplecticEulerLoss
-GeometricMachineLearning._symplectic_euler_evaluation_point
-GeometricMachineLearning.symbolic_hamiltonian_vector_field(::GeometricMachineLearning.SymbolicNeuralNetwork)
-GeometricMachineLearning.SymbolicPullback(::HamiltonianArchitecture)
-GeometricMachineLearning.GeneralizedHamiltonianArchitecture
+HamiltonianNeuralNetworks.hamiltonian_vector_field(::HamiltonianArchitecture)
+HamiltonianNeuralNetworks.HamiltonianArchitecture
+HamiltonianNeuralNetworks.StandardHamiltonianArchitecture
+HamiltonianNeuralNetworks.HNNLoss
+HamiltonianNeuralNetworks.SymplecticEulerLoss
+HamiltonianNeuralNetworks._symplectic_euler_evaluation_point
+HamiltonianNeuralNetworks.symbolic_hamiltonian_vector_field(::HamiltonianNeuralNetworks.SymbolicNeuralNetwork)
+HamiltonianNeuralNetworks.SymbolicPullback(::HamiltonianArchitecture)
+HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture
 ```

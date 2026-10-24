@@ -1,6 +1,7 @@
-using GeometricMachineLearning
-using GeometricMachineLearning: HNNLoss, ZygotePullback, SigmoidActivation
-using AbstractNeuralNetworks: NeuralNetwork, params
+using HamiltonianNeuralNetworks
+using HamiltonianNeuralNetworks: HNNLoss
+using GeometricMachineLearning: CPU, ZygotePullback
+using AbstractNeuralNetworks: NeuralNetwork, SigmoidActivation, params
 using LinearAlgebra: norm
 using NeuralNetworkParameters: NetworkParameters
 using Test
@@ -25,7 +26,7 @@ extreme_scale_underflow(::Type{Float64}) = Float64(1e170)
 const arch = StandardHamiltonianArchitecture(2, 4, 1, SigmoidActivation())
 const pullback = SymbolicPullback(arch)
 const reference = ZygotePullback(HNNLoss(arch))
-const hvf = GeometricMachineLearning.hamiltonian_vector_field(arch)
+const hvf = HamiltonianNeuralNetworks.hamiltonian_vector_field(arch)
 
 # The symbolic pullback is the gradient of `HNNLoss` on the batch: the generated per-sample
 # gradients of the surrogate `½‖rᵢ‖²`, scaled by `1/(‖R‖‖Y‖)`. Two batch sizes: at `N = 1` the

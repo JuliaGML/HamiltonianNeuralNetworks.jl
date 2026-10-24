@@ -5,13 +5,15 @@
 # learned Hamiltonian looks like on a grid; this one asks what happens when you step with it. The
 # two questions come apart: a network can match `H` closely on the training grid and still drift in
 # energy over a long integration, and no test in the suite checks the second.
-using GeometricMachineLearning
+using HamiltonianNeuralNetworks
+using GeometricMachineLearning: Adam, Batch, CPU, DataLoader, NeuralNetwork,
+                                TrainingOptimizer, train!
 using GeometricIntegrators: ODEProblem, ImplicitMidpoint, integrate
 
 # the Hamiltonian, its symplectic gradient, and the training data
 include("../utilities/pendulum.jl")
 
-# `smoke_size(full, smoke)` returns the second when GML_SMOKE is set. See scripts/README.md.
+# `smoke_size(full, smoke)` returns the second when HNN_SMOKE is set. See scripts/README.md.
 include("../utilities/smoke.jl")
 
 const ld = 5
