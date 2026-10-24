@@ -36,3 +36,10 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   bibliography entries, and link into GML's manual through DocumenterInterLinks. The pendulum
   reproduction scripts and the `SymplecticEulerLoss` verification script move with their
   utilities; `smoke_size` reads `HNN_SMOKE`, and `scripts/runscripts.jl` runs them.
+
+### Dependencies
+
+* **Julia 1.12 is required.** `[compat]` declares `julia = "1.12"`, so a caller on Julia 1.11
+  cannot install this version. The package is carved out of GeometricMachineLearning at that
+  floor: the commit that creates it declares the 1.12 bound from the start, so 1.12 is where the
+  package begins rather than a floor raised later.
