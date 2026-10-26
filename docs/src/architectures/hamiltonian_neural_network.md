@@ -55,5 +55,7 @@ HamiltonianNeuralNetworks.SymplecticEulerLoss
 HamiltonianNeuralNetworks._symplectic_euler_evaluation_point
 HamiltonianNeuralNetworks.symbolic_hamiltonian_vector_field(::HamiltonianNeuralNetworks.SymbolicNeuralNetwork)
 HamiltonianNeuralNetworks.SymbolicPullback(::HamiltonianArchitecture)
-HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture
 ```
+
+The [generalized Hamiltonian network](@ref ghnn_architecture) is a different map and has a page of
+its own.

@@ -37,7 +37,40 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   reproduction scripts and the `SymplecticEulerLoss` verification script move with their
   utilities; `smoke_size` reads `HNN_SMOKE`, and `scripts/runscripts.jl` runs them.
 
+* **The generalized and forced Hamiltonian networks, with the parameters of the system.**
+  `GeneralizedHamiltonianArchitecture` is implemented rather than a constructor that raises: it is a
+  chain of `n_integrators` symplectic-Euler steps, each differentiating a learned kinetic and a
+  learned potential energy, and its forward pass takes the parameters of the *system* beside the
+  state — `nn(x, μ)`, or `apply_parametric` — so one network covers a range of problems rather than
+  one instance. `ForcedGeneralizedHamiltonianArchitecture` puts a `ForcingLayer` between the two
+  steps of each integrator and is exported beside the other two architectures. `SymbolicEnergy` with
+  its kinetic and potential constructors, `SymplecticEuler` with its `A` and `B` steps and
+  `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
+* **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
+  generalized or forced network, generated in closed form: the per-sample gradients of the
+  surrogate `½‖rᵢ‖²` summed over the batch and scaled by the two norms of the loss's residual, in
+  both precisions. Its value and gradient are those of `ParametricLoss` on the batch, which a
+  `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as a `(q, p)` pair of `d × 1 × k` ones.
+  A chain of more than one integrator is refused with an `ArgumentError`, because one expression for
+  the whole chain does not finish building; `train!` takes the `ZygotePullback` of the same loss.
+  `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and refuses a
+  generalized architecture, which is a map rather than a scalar Hamiltonian.
+* **The forced generalized Hamiltonian network's reproduction script.** It trains the three forcing
+  types of the sinusoidally forced harmonic oscillator — where the time is the parameter of the
+  system — and integrates a trajectory with the learned network; `HNN_SMOKE` runs it at a size that
+  exercises the same code path in seconds.
+
 ### Dependencies
+
+* **GeometricMachineLearning is a dependency.** The forced architecture is built from GML's
+  `ForcingLayer`, and the parametric network trains through GML's `ParametricLoss` and
+  `ParametricDataLoader`, so the package depends on GML rather than asking a caller to supply it.
+  It loads Zygote with it. Until GML 0.9.0 is registered, `[sources]` takes GML from its `main`
+  branch.
+* **GeometricBase supplies the parameters of the system.** `NullParameters` and
+  `OptionalParameters` are what an architecture's `parameters` field and every parametric call take;
+  GeometricBase owns both names, and reaching them from the package that defines them keeps
+  ExplicitImports' owner check green.
 
 * **Julia 1.12 is required.** `[compat]` declares `julia = "1.12"`, so a caller on Julia 1.11
   cannot install this version. The package is carved out of GeometricMachineLearning at that

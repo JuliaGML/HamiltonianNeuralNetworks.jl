@@ -41,41 +41,6 @@ struct StandardHamiltonianArchitecture{AT} <: HamiltonianArchitecture{AT}
     end
 end
 
-GHNN_integrator_default = nothing
-
-"""
-    GeneralizedHamiltonianArchitecture <: HamiltonianArchitecture
-
-A realization of generalized Hamiltonian neural networks (GHNNs) as introduced in [horn2025generalized](@cite).
-
-Also see [`StandardHamiltonianArchitecture`](@ref).
-
-# Constructor
-
-The constructor takes the following input arguments:
-1. `dim`: system dimension,
-2. `width = dim`: width of the hidden layer. By default this is equal to `dim`,
-3. `nhidden = $(HNN_nhidden_default)`: the number of hidden layers,
-4. `activation = $(HNN_activation_default)`: the activation function used in the GHNN,
-5. `integrator = $(GHNN_integrator_default)`: the integrator that is used to design the GHNN.
-"""
-struct GeneralizedHamiltonianArchitecture{AT, IT} <: HamiltonianArchitecture{AT}
-    dim::Int
-    width::Int
-    nhidden::Int
-    activation::AT
-    integrator::IT
-
-    function GeneralizedHamiltonianArchitecture(
-            dim, width = dim, nhidden = HNN_nhidden_default,
-            activation = HNN_activation_default, integrator = GHNN_integrator_default)
-        error("GHNN still has to be implemented!")
-        # fatou-ignore unreachable-code
-        new{typeof(activation), typeof(integrator)}(
-            dim, width, nhidden, activation, integrator)
-    end
-end
-
 @inline AbstractNeuralNetworks.dim(arch::HamiltonianArchitecture) = arch.dim
 
 """
