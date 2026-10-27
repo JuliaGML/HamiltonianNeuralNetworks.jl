@@ -3,7 +3,6 @@
 
 using HamiltonianNeuralNetworks
 using GeometricMachineLearning: ForcingLayer, NeuralNetwork, apply_parametric
-using GeometricBase: NullParameters
 using AbstractNeuralNetworks: params
 using Test
 import Random

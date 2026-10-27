@@ -37,9 +37,9 @@ end
 @doc raw"""
     SymbolicEnergy
 
-The learned energy of one half of a symplectic-Euler step: the energy network over the state it
-differentiates and the parameters of the system, together with the gradient function that
-[`build_gradient`](@ref) generates from it.
+The learned energy of one half of a symplectic-Euler step: the shape of the energy network over the
+state it differentiates and the parameters of the system, from which `Chain` builds the network and
+[`build_gradient`](@ref) the gradient that the step calls.
 
 See [`SymbolicPotentialEnergy`](@ref) and [`SymbolicKineticEnergy`](@ref).
 """

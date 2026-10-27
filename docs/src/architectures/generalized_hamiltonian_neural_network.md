@@ -8,7 +8,7 @@ gradient of an energy that depends on the other:
 ```math
 \begin{pmatrix} q \\ p \end{pmatrix} \mapsto
 \begin{pmatrix} q + \nabla_p T(p) \\ p \end{pmatrix}
-\quad\text{and}\quad
+\quad\text{or}\quad
 \begin{pmatrix} q \\ p \end{pmatrix} \mapsto
 \begin{pmatrix} q \\ p - \nabla_q V(q) \end{pmatrix},
 ```

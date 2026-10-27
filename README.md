@@ -8,21 +8,16 @@ Hamiltonian neural networks learn a Hamiltonian vector field from data. The netw
 the Hamiltonian, and the vector field is its symplectic gradient, so the learned dynamics are
 Hamiltonian by construction.
 
-The package provides the architecture `StandardHamiltonianArchitecture`, the losses `HNNLoss` (for
-vector field data) and `SymplecticEulerLoss` (for pairs of states one timestep apart), and a
-`SymbolicPullback` that computes the gradient of `HNNLoss` symbolically. The networks train with
-the data loader, the training loop and the optimisers of
-[GeometricMachineLearning.jl](https://github.com/JuliaGNI/GeometricMachineLearning.jl).
+The package provides the architectures `StandardHamiltonianArchitecture`,
+`GeneralizedHamiltonianArchitecture` and `ForcedGeneralizedHamiltonianArchitecture`, the losses
+`HNNLoss` (for vector field data) and `SymplecticEulerLoss` (for pairs of states one timestep
+apart), and the `SymbolicPullback`s that compute the gradient of `HNNLoss` symbolically and of
+`ParametricLoss` in closed form. The networks train with the data loader, the training loop and
+the optimisers of
+[GeometricMachineLearning.jl](https://github.com/JuliaGNI/GeometricMachineLearning.jl),
+which the package depends on.
 
-The package does not depend on GeometricMachineLearning, so add it to your environment yourself.
-Until GeometricMachineLearning 0.9 is registered, add it from its `main` branch:
-
-```julia
-using Pkg
-Pkg.add(url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "main")
-```
-
-Then train a network:
+Train a network:
 
 ```julia
 using HamiltonianNeuralNetworks
