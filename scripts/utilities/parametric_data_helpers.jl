@@ -24,7 +24,7 @@ function forced_harmonic_oscillator_solution(
                   sin(omega * time) +
                   initial_conditions[j].q * cos(omega * time) +
                   amplitude * sin(Omega * time)
-        p[j, i] = -omega^2 * initial_conditions[j].q * sin(omega * time) +
+        p[j, i] = -omega * initial_conditions[j].q * sin(omega * time) +
                   (initial_conditions[j].p - Omega * amplitude) * cos(omega * time) +
                   Omega * amplitude * cos(Omega * time)
     end

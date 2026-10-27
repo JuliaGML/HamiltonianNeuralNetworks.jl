@@ -68,8 +68,9 @@ end
     @test !isapprox(nn(x, (m = 2.0,)), output)
 end
 
-# The refusal of the forcing type with the phrase of the check that raises it, and the refusal of an
-# odd dimension, which a forced chain has no split of the state for either.
+# The refusal of the forcing type with the phrase of the check that raises it, the refusal of an
+# odd dimension, which a forced chain has no split of the state for either, and the refusals of a
+# negative number of forcing layers and of a width of zero at construction rather than in `Chain`.
 @testset "the forced architecture is refused what it does not know" begin
     @test_throws ArgumentError ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM;
         forcing_type = :X)
@@ -83,6 +84,20 @@ end
     @test occursin("$(FORCED_DIM + 1)",
         argument_error_message(
             () -> ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM + 1)))
+
+    @test_throws ArgumentError ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM;
+        n_forcing_layers = -1)
+    message = argument_error_message(() -> ForcedGeneralizedHamiltonianArchitecture(
+        FORCED_DIM; n_forcing_layers = -1))
+    @test occursin("n_forcing_layers", message)
+    @test occursin("-1", message)
+    no_hidden_layer = ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM; n_forcing_layers = 0)
+    @test no_hidden_layer.n_forcing_layers == 0
+
+    @test_throws ArgumentError ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM; width = 0)
+    @test occursin("`width` is 0",
+        argument_error_message(
+            () -> ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM; width = 0)))
 end
 
 # `nn(x, μ)` is `apply_parametric`, for every forcing type and every batch form a

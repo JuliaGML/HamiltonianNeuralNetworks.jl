@@ -74,8 +74,8 @@ end
         @test later != earlier
     end
     # both forcing layers, at their own level of the tree
-    @test largest_change(deepcopy(before).L2, params(nn).L2) > zero(T)
-    @test largest_change(deepcopy(before).L5, params(nn).L5) > zero(T)
+    @test largest_change(before.L2, params(nn).L2) > zero(T)
+    @test largest_change(before.L5, params(nn).L5) > zero(T)
 end
 
 # A `(q, p)` loader is the other shape the batch comes in, and the network takes it too.

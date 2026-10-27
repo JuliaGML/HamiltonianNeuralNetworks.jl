@@ -1,7 +1,8 @@
 """
     HamiltonianArchitecture <: Architecture
 
-See [`StandardHamiltonianArchitecture`](@ref) and [`GeneralizedHamiltonianArchitecture`](@ref).
+See [`StandardHamiltonianArchitecture`](@ref), [`GeneralizedHamiltonianArchitecture`](@ref) and
+[`ForcedGeneralizedHamiltonianArchitecture`](@ref).
 """
 abstract type HamiltonianArchitecture{AT <: Activation} <: Architecture end
 

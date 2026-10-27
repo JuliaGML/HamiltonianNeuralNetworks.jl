@@ -12,9 +12,8 @@ Also compare [`ForcedSympNet`](@extref GeometricMachineLearning.ForcedSympNet).
 # Constructor
 
 The constructor takes the arguments of [`GeneralizedHamiltonianArchitecture`](@ref) and
-1. `n_forcing_layers = $(GHNN_n_forcing_layers_default)`: the number of hidden layers of the network
-   of each forcing layer,
-2. `forcing_type = :$(GHNN_forcing_type_default)`: what the forcing reads, `:Q`, `:P` or `:QP`; see
+1. `n_forcing_layers = 2`: the number of hidden layers of the network of each forcing layer,
+2. `forcing_type = :P`: what the forcing reads, `:Q`, `:P` or `:QP`; see
    [`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer).
 """
 struct ForcedGeneralizedHamiltonianArchitecture{FT, AT, PT <: OptionalParameters} <:
@@ -34,8 +33,12 @@ struct ForcedGeneralizedHamiltonianArchitecture{FT, AT, PT <: OptionalParameters
             parameters::OptionalParameters = NullParameters(),
             forcing_type::Symbol = GHNN_forcing_type_default)
         _check_dimension(dim)
+        _check_width(width)
         _check_nhidden(nhidden)
         _check_n_integrators(n_integrators)
+        n_forcing_layers < 0 && throw(ArgumentError(
+            "the number of hidden layers of a forcing layer is not negative; " *
+            "`n_forcing_layers` is $(n_forcing_layers)."))
         # GML's own guard, so that the refused set is the set `ForcingLayer` reads rather than a copy
         # of it. The architecture refuses a mistyped `forcing_type` at construction, before a `Chain`
         # exists.

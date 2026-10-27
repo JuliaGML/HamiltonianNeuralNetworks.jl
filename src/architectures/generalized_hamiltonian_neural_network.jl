@@ -27,6 +27,15 @@ function _check_nhidden(nhidden::Integer)
     nhidden
 end
 
+# A layer of width zero has no output, so an energy network or a forcing network of that width has
+# nothing to differentiate.
+function _check_width(width::Integer)
+    width < 1 && throw(ArgumentError(
+        "the width of the layers of a generalized Hamiltonian network is at least one; `width` is " *
+        "$(width)."))
+    width
+end
+
 # The length of the flat vector the parameters of the system occupy in the input of an energy
 # network, which is what its first layer takes beside the state. It is a length and not the values:
 # the `μ` of a call is the one that enters.
@@ -311,9 +320,9 @@ Also see [`StandardHamiltonianArchitecture`](@ref) and
 The constructor takes the following input arguments:
 1. `dim`: system dimension, which is even,
 2. `width = dim`: width of the hidden layer. By default this is equal to `dim`,
-3. `nhidden = $(HNN_nhidden_default)`: the number of hidden layers of each energy network,
-4. `n_integrators = $(GHNN_n_integrators_default)`: the number of integrators used in the GHNN,
-5. `activation = $(HNN_activation_default)`: the activation function used in the GHNN,
+3. `nhidden = 1`: the number of hidden layers of each energy network,
+4. `n_integrators = 1`: the number of integrators used in the GHNN,
+5. `activation = AbstractNeuralNetworks.TanhActivation()`: the activation function used in the GHNN,
 6. `parameters = NullParameters()`: the parameters of the system, which fix the length of the flat
    vector the energy networks take beside their state; their values enter with each call.
 
@@ -346,6 +355,7 @@ struct GeneralizedHamiltonianArchitecture{AT, PT <: OptionalParameters} <:
             n_integrators::Integer = GHNN_n_integrators_default, activation = HNN_activation_default,
             parameters::OptionalParameters = NullParameters())
         _check_dimension(dim)
+        _check_width(width)
         _check_nhidden(nhidden)
         _check_n_integrators(n_integrators)
         _activation = Activation(activation)

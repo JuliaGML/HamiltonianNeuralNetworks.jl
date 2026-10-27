@@ -91,19 +91,3 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   bound admits, while `[sources]` takes GML from that branch. The bound becomes `"0.9"` in the
   change that removes `[sources]` from this file: the parametric API is GML 0.9's, and a release
   against 0.8.0 has no such names to import.
-
-### K18 · A forced architecture accepts a negative `n_forcing_layers` and refuses it later, with a message that names no parameter.
-
-- **location:** `src/architectures/forced_generalized_hamiltonian_neural_network.jl:30`
-- **kind:** defect
-- **found:** 2026-10-27, in the pre-pull-request verification of the parametric networks
-- **evidence:**
-  `ForcedGeneralizedHamiltonianArchitecture`'s constructor checks `dim`, `nhidden`, `n_integrators`
-  and `forcing_type` (`:36-42`) and never checks `n_forcing_layers`, which it forwards to
-  `ForcingLayer` (`:61-62`). The architecture therefore constructs. The failure comes later, in
-  `Chain(arch)`: `ForcingLayer`'s `_forcing_model` builds its hidden layers with
-  `ntuple(_ -> Dense(width, width, activation), nhidden)`, so a negative count raises
-  `ArgumentError: tuple length should be ≥ 0` there, naming neither the architecture nor the
-  parameter. Its sibling refuses `nhidden = -1` at construction, with a message that names the value.
-  The fix is a check at construction with a message naming `n_forcing_layers`, which `_check_nhidden`
-  cannot supply, since its message names an energy network.

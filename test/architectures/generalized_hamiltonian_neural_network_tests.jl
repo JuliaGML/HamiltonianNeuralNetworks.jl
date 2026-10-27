@@ -62,7 +62,7 @@ end
     @test isapprox(output, T.(GHNN_OUTPUT_WITH_PARAMETERS); rtol = 100 * eps(T))
 end
 
-# §Oracles: the parameter counts of the thesis (Table 4.2 and Table 7.1). The mapping between its
+# The parameter counts of the thesis (Table 4.2 and Table 7.1). The mapping between its
 # networks and this architecture: one Hamiltonian per integrator, one energy network each; the thesis
 # counts the first dense layer among the hidden layers, so `nhidden` is one less than its number; the
 # output layer is `Linear(width, 1; use_bias = false)`; and the parameters of the system have one
@@ -104,6 +104,13 @@ end
     @test_throws ArgumentError GeneralizedHamiltonianArchitecture(2; nhidden = -1)
     @test occursin("-1", argument_error_message(
         () -> GeneralizedHamiltonianArchitecture(2; nhidden = -1)))
+
+    # A layer of width zero has no output, and the refusal is at construction.
+    for width in (0, -2)
+        @test_throws ArgumentError GeneralizedHamiltonianArchitecture(2; width)
+        message = argument_error_message(() -> GeneralizedHamiltonianArchitecture(2; width))
+        @test occursin("`width` is $(width)", message)
+    end
 
     # `nhidden = 0` is the thesis's one hidden layer, and it builds.
     @test parameterlength(NeuralNetwork(GeneralizedHamiltonianArchitecture(2; nhidden = 0))) >
