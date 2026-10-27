@@ -80,8 +80,8 @@ does not finish building.
 The pullback traces the whole chain, and a [`SymplecticEuler`](@ref) step inlines the generated
 gradient of its energy network — an expression that is itself already a derivative. Stacking
 integrators inlines that expression inside itself, so what a chain of them costs grows
-multiplicatively rather than additively: one integrator of a small network is a tenth of a second of
-building, two exceed a gigabyte of expression.
+multiplicatively rather than additively: one integrator of a small network builds in under a
+second, and the expression of two does not finish building.
 """
 function _check_symbolic_pullback_is_tractable(arch)
     n = _n_symplectic_integrators(arch)
