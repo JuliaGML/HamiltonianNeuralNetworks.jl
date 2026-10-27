@@ -27,6 +27,7 @@ makedocs(;
     pages = [
         "Home" => "index.md",
         "Hamiltonian Neural Network" => "architectures/hamiltonian_neural_network.md",
+        "Generalized Hamiltonian Neural Network" => "architectures/generalized_hamiltonian_neural_network.md",
         "Tutorial" => "tutorials/hamiltonian_neural_network.md",
         "References" => "references.md"
     ]

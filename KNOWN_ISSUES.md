@@ -44,3 +44,63 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `SymbolicPullback` call, which also accepts a `NamedTuple` and fails in the same place. The fix
   belongs with the data signatures of the losses as a whole: either each loss accepts only the data
   its vector field can take, or `(q, p)` data is converted before it reaches the field.
+
+## Upstream
+
+### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
+
+- **location:** `test/integration/train_pghnn.jl:82`
+- **kind:** upstream
+- **found:** 2026-10-27, in GeometricMachineLearning, whose `KNOWN_ISSUES.md` holds it under `K28`
+- **evidence:**
+  AbstractNeuralNetworks' `_norm` of a `(q, p)` named tuple divides by `√length(dx)`, which is a
+  `Float64`, so `ParametricLoss` returns a `Float64` on `Float32` `(q, p)` data and the history of a
+  training run on such a loader is a `Vector{Float64}`. The stacked form keeps the data's element
+  type. A `Float32` network of `GeneralizedHamiltonianArchitecture(4; parameters = (m = 1.0f0,))`,
+  one `Float32` batch of three samples in each form, and the same three `(m = …)` parameters:
+
+  ```julia
+  data = (q = rand(Float32, 2, 1, 3), p = rand(Float32, 2, 1, 3))
+  stacked = rand(Float32, 4, 1, 3)
+  μs = [(m = 1.0f0,), (m = 1.5f0,), (m = 2.0f0,)]
+  typeof(ParametricLoss()(nn.model, params(nn), data, data, μs))         # Float64
+  typeof(ParametricLoss()(nn.model, params(nn), stacked, stacked, μs))   # Float32
+  ```
+
+  The training testset of the `(q, p)` form therefore asserts the length and the finiteness of the
+  history and the change of every leaf, and not its element type.
+
+## Raised while adding the parametric networks, not addressed
+
+### K17 · The `GeometricMachineLearning` compat bound admits the registered 0.8.0, which has none of the parametric names the package imports.
+
+- **location:** `Project.toml:22`
+- **kind:** defect
+- **found:** 2026-10-27, in the pre-pull-request verification of the parametric networks
+- **evidence:**
+  The package imports `ForcingLayer`, `ParametricLoss` and `apply_parametric` from
+  GeometricMachineLearning (`src/HamiltonianNeuralNetworks.jl:19`), and reaches
+  `_flatten_system_parameters`, `concatenate_array_with_parameters`, `assign_q_and_p` and
+  `_check_forcing_type` through the module's name. The registered 0.8.0 has six of those seven names
+  nowhere: its tree is `7616b841d9f7fca26df41a83ea8c2496ea31d25a`, which is this checkout's
+  `v0.8.0`, `git grep -l` finds `ForcingLayer`, `ParametricLoss`, `apply_parametric`,
+  `_flatten_system_parameters`, `concatenate_array_with_parameters` and `_check_forcing_type` at no
+  file under `v0.8.0:src/`, and `assign_q_and_p` is the one it has. A
+  resolve that chose that release therefore raises an `UndefVarError` on load. It cannot be seen
+  here, because `[sources]` takes GML from commit `2604f115` of its `main` branch, which declares
+  `version = "0.8.0"` and so satisfies the bound; a bound of `"0.9"` fails to resolve against it.
+  The bound therefore stays `"0.8"` until GML declares 0.9. It becomes `"0.9"` in the change that
+  removes `[sources]` from this file, once GML 0.9 is registered: the parametric API is GML 0.9's,
+  and a release against 0.8.0 has no such names to import.
+
+### K19 · The Downgrade job fails to build while `Project.toml` takes GeometricMachineLearning from a URL source.
+
+- **location:** `Project.toml:17`
+- **kind:** defect
+- **found:** #3
+- **evidence:**
+  `julia-downgrade-compat` logs `Found source package: GeometricMachineLearning (url=…)` and leaves
+  GML out of the dependencies it pins, and `julia-buildpkg` then stops with
+  `LoadError: could not find manifest entry for package with uuid 194d25b2-d3f5-49f0-af24-c124f4aa80cc`,
+  which is GML's. The job builds nothing, so it tests no lower bound. It is advisory
+  (`.github/workflows/CI.yml:25-27`), and it stays red until the change of K17 removes `[sources]`.

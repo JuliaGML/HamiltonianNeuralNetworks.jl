@@ -17,9 +17,15 @@ test_explicit_imports(HamiltonianNeuralNetworks;
     all_qualified_accesses_are_public = false)
 
 const NON_PUBLIC_QUALIFIED = (
-    :TanhActivation, :dim,                       # AbstractNeuralNetworks
-    :Jacobian, :symbolic_parameter_gradient,     # SymbolicNeuralNetworks
-    :variables)                                  # Symbolics
+    :TanhActivation, :dim, :Initializer,          # AbstractNeuralNetworks
+    :Callable,                                    # Base
+    :_flatten_system_parameters,                  # GeometricMachineLearning
+    :concatenate_array_with_parameters,           # GeometricMachineLearning
+    :assign_q_and_p,                              # GeometricMachineLearning
+    :_check_forcing_type,                         # GeometricMachineLearning
+    :Jacobian, :symbolic_parameter_gradient,      # SymbolicNeuralNetworks
+    :symbolic_differentials, :symbolic_derivative, # SymbolicNeuralNetworks
+    :variables)                                   # Symbolics
 const NON_PUBLIC_IMPORTS = (
     :AbstractExplicitLayer, :Architecture,       # AbstractNeuralNetworks
     :derivative)                                 # SymbolicNeuralNetworks
