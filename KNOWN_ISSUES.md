@@ -44,3 +44,28 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `SymbolicPullback` call, which also accepts a `NamedTuple` and fails in the same place. The fix
   belongs with the data signatures of the losses as a whole: either each loss accepts only the data
   its vector field can take, or `(q, p)` data is converted before it reaches the field.
+
+## Upstream
+
+### K28 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
+
+- **location:** `test/integration/train_pghnn.jl:82`
+- **kind:** upstream
+- **found:** 2026-10-27, in GeometricMachineLearning, whose `KNOWN_ISSUES.md` holds it under the same ID
+- **evidence:**
+  AbstractNeuralNetworks' `_norm` of a `(q, p)` named tuple divides by `√length(dx)`, which is a
+  `Float64`, so `ParametricLoss` returns a `Float64` on `Float32` `(q, p)` data and the history of a
+  training run on such a loader is a `Vector{Float64}`. The stacked form keeps the data's element
+  type. A `Float32` network of `GeneralizedHamiltonianArchitecture(4; parameters = (m = 1.0f0,))`,
+  one `Float32` batch of three samples in each form, and the same three `(m = …)` parameters:
+
+  ```julia
+  data = (q = rand(Float32, 2, 1, 3), p = rand(Float32, 2, 1, 3))
+  stacked = rand(Float32, 4, 1, 3)
+  μs = [(m = 1.0f0,), (m = 1.5f0,), (m = 2.0f0,)]
+  typeof(ParametricLoss()(nn.model, params(nn), data, data, μs))         # Float64
+  typeof(ParametricLoss()(nn.model, params(nn), stacked, stacked, μs))   # Float32
+  ```
+
+  The training testset of the `(q, p)` form therefore asserts the length and the finiteness of the
+  history and the change of every leaf, and not its element type.

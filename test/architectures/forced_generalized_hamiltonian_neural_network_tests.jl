@@ -1,5 +1,5 @@
 # The forced generalized Hamiltonian network: its chain, its forward pass with and without system
-# parameters for each forcing type, and its refusal of a forcing type it does not know.
+# parameters for each forcing type, and what its constructor refuses.
 
 using HamiltonianNeuralNetworks
 using GeometricMachineLearning: ForcingLayer, NeuralNetwork, apply_parametric
@@ -18,6 +18,18 @@ const FORCING_TYPES = (:Q, :P, :QP)
 
 finite(x::AbstractArray) = all(isfinite, x)
 finite(z::NamedTuple) = finite(z.q) && finite(z.p)
+
+# The value of the `ArgumentError` that `f` raises, so that a test can require that the message names
+# the bad value and not only the type.
+function argument_error_message(f)
+    try
+        f()
+    catch e
+        e isa ArgumentError || rethrow()
+        return e.msg
+    end
+    error("no `ArgumentError` was raised")
+end
 
 # The chain of one integrator is the step that changes `q`, the forcing, and the step that changes
 # `p`, and the last of them returns the state alone.
@@ -39,25 +51,39 @@ finite(z::NamedTuple) = finite(z.q) && finite(z.p)
         chain2.layers[[1, 3, 4, 6]])
 end
 
-# The forward pass, per forcing type and per precision: the shape of a state, a finite result, and —
-# for the last step of the chain — the state alone rather than the state with the parameters of the
-# system beside it.
+# The forward pass, per forcing type and per precision: the shape of a state, its element type, a
+# finite result, and — for the last step of the chain — the state alone rather than the state with
+# the parameters of the system beside it. The same state with two values of `μ` gives two answers,
+# which is what makes the network depend on the parameters of the system at all.
 @testset "ForcedGeneralizedHamiltonianArchitecture $forcing_type ($T)" for forcing_type in FORCING_TYPES,
     T in REAL_ELTYPES
 
     architecture = ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM;
         parameters = SYSTEM_PARAMETERS, forcing_type)
     nn = NeuralNetwork(architecture, T)
-    output = nn(rand(T, FORCED_DIM), SYSTEM_PARAMETERS)
+    x = rand(T, FORCED_DIM)
+    output = nn(x, SYSTEM_PARAMETERS)
     @test size(output) == (FORCED_DIM,)
+    @test eltype(output) === T
     @test finite(output)
+    @test !isapprox(nn(x, (m = 2.0,)), output)
 end
 
-# The 7 assertions of the construct-and-evaluate test: the two of the forward pass of each of the
-# three forcing types, and the refusal of a fourth type.
-@testset "the forced architecture is refused a forcing type it does not know" begin
+# The refusal of the forcing type with the phrase of the check that raises it, and the refusal of an
+# odd dimension, which a forced chain has no split of the state for either.
+@testset "the forced architecture is refused what it does not know" begin
     @test_throws ArgumentError ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM;
         forcing_type = :X)
+    message = argument_error_message(() -> ForcedGeneralizedHamiltonianArchitecture(
+        FORCED_DIM;
+        forcing_type = :X))
+    @test occursin(":X", message)
+    @test occursin(":QP", message)
+
+    @test_throws ArgumentError ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM + 1)
+    @test occursin("$(FORCED_DIM + 1)",
+        argument_error_message(
+            () -> ForcedGeneralizedHamiltonianArchitecture(FORCED_DIM + 1)))
 end
 
 # `nn(x, μ)` is `apply_parametric`, for every forcing type and every batch form a
@@ -75,6 +101,7 @@ end
         x = rand(T, FORCED_DIM)
         μ = first(μs)
         @test nn(x, μ) ≈ apply_parametric(nn.model, x, μ, params(nn))
+        @test eltype(nn(x, μ)) === T
         @test size(nn(x, μ)) == size(x)
 
         # a `(q, p)` pair
@@ -93,6 +120,11 @@ end
         @test !(forced_batch[:, :, 1] ≈ forced_batch[:, :, 2])
         @test all(forced_batch[:, :, i] ≈ nn(batch[:, :, i:i], [μs[i]])[:, :, 1]
         for i in axes(batch, 3))
+
+        # `apply_parametric` takes any `AbstractVector` of μ, and `Vector{Any}` of `NamedTuple`s is
+        # not a `Vector{<:NamedTuple}`.
+        untyped = Any[(m = 1.0,), (m = 2.0,), (m = 3.0,)]
+        @test nn(batch, untyped) ≈ apply_parametric(nn.model, batch, untyped, params(nn))
     end
 end
 

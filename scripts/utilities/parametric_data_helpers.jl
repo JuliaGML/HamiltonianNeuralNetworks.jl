@@ -47,15 +47,16 @@ end
     turn_q_p_data_into_correct_format(q, p)
 
 The `(q, p)` trajectories of `q` and `p`, of size `(number of initial conditions, length(t))`, as a
-pair of tensors of size `(dim, 2, number of samples)`: the state of a sample in the first column and
-its target, one time step later, in the second.
+pair of tensors of size `(1, 2, number of samples)`: one row, the single degree of freedom a
+trajectory of the oscillator has, the state of a sample in the first column and its target, one time
+step later, in the second.
 """
 function turn_q_p_data_into_correct_format(q::AbstractMatrix, p::AbstractMatrix)
     n_initial_conditions, n_time_steps = size(q)
     size(p) == size(q) || throw(ArgumentError(
         "`q` has the size $(size(q)) and `p` has the size $(size(p))."))
     samples = n_time_steps - 1
-    q_pairs = Array{eltype(q), 3}(undef, size(q, 1), 2, samples * n_initial_conditions)
+    q_pairs = Array{eltype(q), 3}(undef, 1, 2, samples * n_initial_conditions)
     p_pairs = similar(q_pairs)
     for i in 1:n_initial_conditions, j in 1:samples
 

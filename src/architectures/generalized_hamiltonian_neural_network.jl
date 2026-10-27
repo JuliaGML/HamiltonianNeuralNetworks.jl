@@ -213,12 +213,11 @@ end
 #
 # The length check is what keeps a `μ` of the wrong shape from being silently truncated by the
 # generated gradient function, which reads the entries it was built for and ignores the rest.
-function _energy_input(integrator::SymplecticEuler{M}, state, μ) where {M}
+function _energy_input(integrator::SymplecticEuler, state, μ)
     input = GeometricMachineLearning.concatenate_array_with_parameters(state, μ)
     size(input, 1) == input_dimension(integrator.energy_model) || throw(ArgumentError(
         "the energy network of this layer takes $(input_dimension(integrator.energy_model)) " *
-        "inputs and this call has $(size(input, 1)): the $(M ÷ 2) rows of the state and the " *
-        "flattened system parameters."))
+        "inputs and this call has $(size(input, 1))."))
     input
 end
 
@@ -292,16 +291,16 @@ end
 A realization of generalized Hamiltonian neural networks (GHNNs) as introduced in
 [horn2025generalized](@cite).
 
-The architecture is a chain of `n_integrators` symplectic-Euler steps, each pair of them
-differentiating a learned potential and a learned kinetic energy. Its forward pass takes the
-parameters of the *system* beside the state:
+The architecture is a chain of `n_integrators` pairs of symplectic-Euler steps, `2 n_integrators`
+steps in all: each pair differentiates a learned kinetic and a learned potential energy. Its forward
+pass takes the parameters of the *system* beside the state:
 
 ```julia
 nn(x, μ)
 ```
 
 where `x` is a `(q, p)` pair or a stacked state and `μ` the parameters of the system, as
-[`apply_parametric`](@extref GeometricMachineLearning apply_parametric) takes them. This is what
+[`apply_parametric`](@extref GeometricMachineLearning.apply_parametric) takes them. This is what
 makes one network cover a range of problems rather than one problem instance.
 
 Also see [`StandardHamiltonianArchitecture`](@ref) and
@@ -375,9 +374,9 @@ end
 
 # Without this, `nn(x, μ)` reaches `AbstractNeuralNetworks`' generic two-argument functor, which
 # reads the system parameters as the *network* parameters and hands the first layer a `Float64`. The
-# method takes exactly the forms `apply_parametric` takes, and raises its `MethodError` for a shape it
-# does not, a matrix with one `μ` among them.
+# method takes exactly the forms `apply_parametric` takes — one `μ`, or any `AbstractVector` of them
+# — and raises its `MethodError` for a shape it does not, a matrix with one `μ` among them.
 function (nn::NeuralNetwork{<:GeneralizedHamiltonianArchitecture})(
-        x, μ::Union{OptionalParameters, AbstractVector{<:NamedTuple}})
+        x, μ::Union{OptionalParameters, AbstractVector})
     apply_parametric(nn.model, x, μ, params(nn))
 end

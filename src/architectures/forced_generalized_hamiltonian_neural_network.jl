@@ -5,9 +5,9 @@ A [`GeneralizedHamiltonianArchitecture`](@ref) with a non-conservative term — 
 dissipation — in each of its integrators.
 
 Each integrator is a [`SymplecticEulerA`](@ref) step, a
-[`ForcingLayer`](@extref GeometricMachineLearning ForcingLayer), and a [`SymplecticEulerB`](@ref)
+[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer), and a [`SymplecticEulerB`](@ref)
 step, in that order: the forcing acts on ``\dot{p}``, so it precedes the step that changes ``p``.
-Also compare [`ForcedSympNet`](@extref GeometricMachineLearning ForcedSympNet).
+Also compare [`ForcedSympNet`](@extref GeometricMachineLearning.ForcedSympNet).
 
 # Constructor
 
@@ -15,7 +15,7 @@ The constructor takes the arguments of [`GeneralizedHamiltonianArchitecture`](@r
 1. `n_forcing_layers = $(GHNN_n_forcing_layers_default)`: the number of hidden layers of the network
    of each forcing layer,
 2. `forcing_type = :$(GHNN_forcing_type_default)`: what the forcing reads, `:Q`, `:P` or `:QP`; see
-   [`ForcingLayer`](@extref GeometricMachineLearning ForcingLayer).
+   [`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer).
 """
 struct ForcedGeneralizedHamiltonianArchitecture{FT, AT, PT <: OptionalParameters} <:
        HamiltonianArchitecture{AT}
@@ -75,6 +75,6 @@ end
 # `AbstractNeuralNetworks`' generic two-argument functor, which reads the system parameters as the
 # network parameters.
 function (nn::NeuralNetwork{<:ForcedGeneralizedHamiltonianArchitecture})(
-        x, μ::Union{OptionalParameters, AbstractVector{<:NamedTuple}})
+        x, μ::Union{OptionalParameters, AbstractVector})
     apply_parametric(nn.model, x, μ, params(nn))
 end

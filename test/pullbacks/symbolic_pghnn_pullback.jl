@@ -38,8 +38,7 @@ end
     pullback = SymbolicPullback(architecture, ParametricLoss())
     input = rand(T, 2, 1, n_samples)
     output = rand(T, 2, 1, n_samples)
-    μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0)), (m = T(3.0), ω = T(1.0)),
-        (m = T(0.5), ω = T(2.5))]
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0), (m = 3.0, ω = 1.0), (m = 0.5, ω = 2.5)]
 
     value, back = pullback(params(nn), nn.model, (input, output, μs))
     gradient = back(one(value))
@@ -75,7 +74,7 @@ end
     architecture = single_integrator()
     nn = NeuralNetwork(architecture, T)
     pullback = SymbolicPullback(architecture, ParametricLoss())
-    μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0)), (m = T(3.0), ω = T(1.0))]
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0), (m = 3.0, ω = 1.0)]
     input = rand(T, 2, 1, n_samples)
     output = rand(T, 2, 1, n_samples)
     @test size(input) == (2, 1, n_samples)
@@ -126,14 +125,16 @@ end
     nn = NeuralNetwork(architecture, T)
     pullback = SymbolicPullback(architecture, ParametricLoss())
     input = rand(T, 2, 1, 2)
-    μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0))]
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0)]
     paired_input = (q = input[1:1, :, :], p = input[2:2, :, :])
     prediction = HamiltonianNeuralNetworks.apply_parametric(nn.model, paired_input, μs,
         params(nn))
     output = (q = prediction.q, p = prediction.p)
     value, back = pullback(params(nn), nn.model, (paired_input, output, μs))
+    @test value isa T
     @test value == 0
     foreach_parameter(back(one(value))) do leaf
+        @test eltype(leaf) === T
         @test all(iszero, leaf)
     end
 end
@@ -146,12 +147,13 @@ end
     nn = NeuralNetwork(architecture, T)
     pullback = SymbolicPullback(architecture, ParametricLoss())
 
-    μs = fill((a = [T(1.0), T(2.0)],), 3)
+    μs = fill((a = [1.0, 2.0],), 3)
     input = rand(T, 2, 1, 3)
     output = rand(T, 2, 1, 3)
     value, back = pullback(params(nn), nn.model, (input, output, μs))
     reference_value, reference_back = ZygotePullback(ParametricLoss())(
         params(nn), nn.model, (input, output, μs))
+    @test value isa T
     @test value ≈ reference_value
     foreach_parameter(back(one(value)), reference_back(one(reference_value))) do leaf,
     reference
@@ -159,17 +161,28 @@ end
     end
 end
 
-# The gradient has the element type of the parameters, whatever the precision of the seed.
+# The gradient has the element type of the parameters, on both batch forms and whatever the
+# precision of the seed: a `Float64` seed into a `Float32` network's pullback gives `Float32` leaves.
 @testset "a Float64 seed keeps the parameters' element type" begin
     architecture = single_integrator()
     nn = NeuralNetwork(architecture, Float32)
     pullback = SymbolicPullback(architecture, ParametricLoss())
     input = rand(Float32, 2, 1, 2)
     output = rand(Float32, 2, 1, 2)
-    μs = [(m = 1.0f0, ω = 2.0f0), (m = 2.0f0, ω = 3.0f0)]
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0)]
     value, back = pullback(params(nn), nn.model, (input, output, μs))
     @test value isa Float32
     foreach_parameter(back(1.0)) do leaf
+        @test eltype(leaf) === Float32
+    end
+
+    # The `(q, p)` batch has a call method of its own, with a conversion of its own.
+    paired_input = (q = input[1:1, :, :], p = input[2:2, :, :])
+    paired_output = (q = output[1:1, :, :], p = output[2:2, :, :])
+    paired_value, paired_back = pullback(params(nn), nn.model,
+        (paired_input, paired_output, μs))
+    @test paired_value isa Float32
+    foreach_parameter(paired_back(1.0)) do leaf
         @test eltype(leaf) === Float32
     end
 end
@@ -180,11 +193,13 @@ end
     nn = NeuralNetwork(architecture, T)
     pullback = SymbolicPullback(architecture, ParametricLoss())
     input = rand(T, 2, 1, 2)
-    μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0))]
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0)]
     output = HamiltonianNeuralNetworks.apply_parametric(nn.model, input, μs, params(nn))
     value, back = pullback(params(nn), nn.model, (input, output, μs))
+    @test value isa T
     @test value == 0
     foreach_parameter(back(one(value))) do leaf
+        @test eltype(leaf) === T
         @test all(iszero, leaf)
     end
 end
@@ -204,15 +219,18 @@ end
         (input, output, [(;), (;)]))
     null_value, null_back = null_parameters(params(null_network), null_network.model,
         (input, output, [NullParameters(), NullParameters()]))
+    @test value isa T
     @test value == null_value
     foreach_parameter(back(one(value)), null_back(one(null_value))) do leaf, reference
+        @test eltype(leaf) === T
         @test leaf == reference
     end
 end
 
 # A chain of two integrators inlines the generated gradient of each energy network inside the next
-# one, so its symbolic expression does not finish building; the pullback refuses it rather than
-# appearing to hang, and the message names the parameter and the pullback to use instead.
+# one, so one expression for the chain holds a copy of each of them per integrator, each inside the
+# next. The pullback refuses such a chain rather than building it, and the message names the
+# parameter and the pullback to use instead.
 @testset "the pullback refuses a stacked architecture" begin
     stacked = GeneralizedHamiltonianArchitecture(2; n_integrators = 2,
         parameters = SYSTEM_PARAMETERS)
@@ -226,12 +244,68 @@ end
     @test occursin("n_integrators", message)
     @test occursin("ZygotePullback", message)
 
+    # the forced architecture is counted by its own integrators, and refused with the same message
+    forced = ForcedGeneralizedHamiltonianArchitecture(2; n_integrators = 2,
+        parameters = SYSTEM_PARAMETERS)
+    @test_throws ArgumentError SymbolicPullback(forced, ParametricLoss())
+    forced_message = try
+        SymbolicPullback(forced, ParametricLoss())
+        ""
+    catch e
+        sprint(showerror, e)
+    end
+    @test occursin("n_integrators", forced_message)
+    @test occursin("ZygotePullback", forced_message)
+
     # one integrator is the supported case, and it builds
     @test SymbolicPullback(single_integrator(), ParametricLoss()) isa SymbolicPullback
     @test SymbolicPullback(
         ForcedGeneralizedHamiltonianArchitecture(2;
             parameters = SYSTEM_PARAMETERS),
         ParametricLoss()) isa SymbolicPullback
+end
+
+# A forced architecture's pullback is the pullback of `ParametricLoss` as a plain one's is: its value
+# and its gradient are those of the loss on both forms of a batch, with the forcing layers in the
+# chain that the gradient goes through.
+@testset "the pullback of a forced architecture ($T)" for T in REAL_ELTYPES
+    n_samples = 2
+    architecture = ForcedGeneralizedHamiltonianArchitecture(4;
+        width = 2, nhidden = 1, n_forcing_layers = 1, forcing_type = :P,
+        parameters = SYSTEM_PARAMETERS)
+    nn = NeuralNetwork(architecture, T)
+    pullback = SymbolicPullback(architecture, ParametricLoss())
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0)]
+    input = rand(T, 4, 1, n_samples)
+    output = rand(T, 4, 1, n_samples)
+
+    value, back = pullback(params(nn), nn.model, (input, output, μs))
+    @test value isa T
+    @test value ≈ ParametricLoss()(nn.model, params(nn), input, output, μs)
+    reference_value, reference_back = ZygotePullback(ParametricLoss())(
+        params(nn), nn.model, (input, output, μs))
+    @test value ≈ reference_value rtol = T(√eps(T))
+    foreach_parameter(back(one(value)), reference_back(one(reference_value))) do leaf,
+    reference
+        @test eltype(leaf) === T
+        @test leaf ≈ reference rtol = 1000 * eps(T)
+    end
+
+    paired_input = (q = input[1:2, :, :], p = input[3:4, :, :])
+    paired_output = (q = output[1:2, :, :], p = output[3:4, :, :])
+    paired_value, paired_back = pullback(params(nn), nn.model,
+        (paired_input, paired_output, μs))
+    @test paired_value isa T
+    @test paired_value ≈
+          ParametricLoss()(nn.model, params(nn), paired_input, paired_output, μs)
+    paired_reference_value, paired_reference_back = ZygotePullback(ParametricLoss())(
+        params(nn), nn.model, (paired_input, paired_output, μs))
+    @test paired_value ≈ paired_reference_value rtol = T(√eps(T))
+    foreach_parameter(paired_back(one(paired_value)),
+        paired_reference_back(one(paired_reference_value))) do leaf, reference
+        @test eltype(leaf) === T
+        @test leaf ≈ reference rtol = 1000 * eps(T)
+    end
 end
 
 # A generalized Hamiltonian network is a map rather than a scalar Hamiltonian, so the pullback of

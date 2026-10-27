@@ -62,33 +62,26 @@ function SymbolicPullback(
         "`ZygotePullback(ParametricLoss())`, which is what `train!` uses."))
 end
 
-# How many `SymplecticEuler` layers a chain stacks: only the generalized architectures have more than
-# one, and a network built around a `Chain` of its own says nothing about how many it holds.
-_n_symplectic_integrators(::Any) = 1
-function _n_symplectic_integrators(
-        arch::Union{
-        GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture})
-    arch.n_integrators
-end
-
 @doc raw"""
     _check_symbolic_pullback_is_tractable(arch)
 
-Throw if one symbolic expression for a generalized Hamiltonian network with `arch`'s integrators
-does not finish building.
+Refuse an architecture whose chain holds more than one integrator.
 
 The pullback traces the whole chain, and a [`SymplecticEuler`](@ref) step inlines the generated
 gradient of its energy network â€” an expression that is itself already a derivative. Stacking
-integrators inlines that expression inside itself, so what a chain of them costs grows
-multiplicatively rather than additively: one integrator of a small network builds in under a
-second, and the expression of two does not finish building.
+integrators inlines that expression inside the next step's, so one expression for the chain holds a
+copy of it per integrator, each inside the next, and grows multiplicatively with the number of
+integrators. `ZygotePullback(ParametricLoss())` differentiates through the chain rather than
+generating an expression for it, and has no such limit.
 """
-function _check_symbolic_pullback_is_tractable(arch)
-    n = _n_symplectic_integrators(arch)
+function _check_symbolic_pullback_is_tractable(
+        arch::Union{
+        GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture})
+    n = arch.n_integrators
     n > 1 && throw(ArgumentError(
         "cannot build a `SymbolicPullback` for an architecture with `n_integrators` = $(n): each " *
-        "step inlines the generated gradient of its energy network, so the symbolic expression grows " *
-        "multiplicatively with the number of integrators and does not finish building. Use " *
+        "step inlines the generated gradient of its energy network, so the expression of a chain " *
+        "holds one copy of it per integrator, each inside the next. Use " *
         "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, or a network " *
         "with one integrator."))
     nothing
@@ -97,7 +90,7 @@ end
 @doc raw"""
     SymbolicPullback(arch, ::ParametricLoss)
 
-Make a `SymbolicPullback` of [`ParametricLoss`](@extref GeometricMachineLearning ParametricLoss) for
+Make a `SymbolicPullback` of [`ParametricLoss`](@extref GeometricMachineLearning.ParametricLoss) for
 a [`GeneralizedHamiltonianArchitecture`](@ref) or a
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose forward pass takes the parameters of the
 *system*.
@@ -112,16 +105,16 @@ half scaled by its own norm, which is what the loss does with a `(q, p)` pair â€
 \tfrac12\|r_{p,i}\|^2/\|R_p\|) / (\|Y_q\| + \|Y_p\|)``. The gradient has the parameters' element
 type, and a zero residual gives a zero gradient.
 
-The parameters of the system that `arch` holds fix the shape of `\mu`, and with it the length of the
-input of the generated function: the entries of `\mu` follow the state of a sample there, and the
+The parameters of the system that `arch` holds fix the shape of $\mu$, and with it the length of the
+input of the generated function: the entries of $\mu$ follow the state of a sample there, and the
 symbolic expression splits them off again. Their *values* enter with each call, one per sample.
 
 # The batch
 
 The pullback takes what a
-[`ParametricDataLoader`](@extref GeometricMachineLearning ParametricDataLoader) draws: an input and
-an output of `2d \times 1 \times k` with `k` values of `\mu`, or a `(q, p)` pair of
-`d \times 1 \times k`. A matrix with one `\mu` is not one of the forms `apply_parametric` takes.
+[`ParametricDataLoader`](@extref GeometricMachineLearning.ParametricDataLoader) draws: an input and
+an output of $2d \times 1 \times k$ with $k$ values of $\mu$, or a `(q, p)` pair of
+$d \times 1 \times k$. A matrix with one $\mu$ is not one of the forms `apply_parametric` takes.
 
 The two batch forms are two quantities on one batch, because the loss weighs them differently:
 stacked, `q` above `p`, one norm covers both halves; as a pair, each half is scaled by its own. Each

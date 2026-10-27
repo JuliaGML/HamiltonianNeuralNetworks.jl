@@ -127,6 +127,7 @@ end
     @test parameterlength(empty_parameters) == parameterlength(null_parameters)
     @test empty_parameters(x) == null_parameters(x)
     @test empty_parameters(x, (;)) == null_parameters(x, NullParameters())
+    @test eltype(empty_parameters(x)) === T
 end
 
 @testset "a batch without system parameters keeps its shape ($T)" for T in REAL_ELTYPES
@@ -137,6 +138,8 @@ end
     @test size(nn(x)) == size(x)
     @test size(nn(matrix)) == size(matrix)
     @test size(nn(tensor)) == size(tensor)
+    @test eltype(nn(matrix)) === T
+    @test eltype(nn(tensor)) === T
 
     # Every column is a sample of its own: the matrix call is the vector calls side by side, and not
     # the first of them.
@@ -165,6 +168,42 @@ end
     @test !(nn(batch, μs)[:, :, 1] ≈ nn(batch, μs)[:, :, 2])
     @test all(nn(batch, μs)[:, :, i] ≈ nn(batch[:, :, i:i], [μs[i]])[:, :, 1]
     for i in axes(batch, 3))
+
+    # `apply_parametric` takes any `AbstractVector` of per-sample parameters, and the functor takes
+    # the forms it takes: a vector of `NullParameters` and a `Vector{Any}` of `NamedTuple`s, which
+    # is not a `Vector{<:NamedTuple}`, reach it too.
+    plain = NeuralNetwork(GeneralizedHamiltonianArchitecture(2), T)
+    plain_batch = rand(T, 2, 1, 2)
+    nulls = [NullParameters(), NullParameters()]
+    @test plain(plain_batch, nulls) ≈
+          apply_parametric(plain.model, plain_batch, nulls, params(plain))
+    untyped = Any[(m = 1.0,), (m = 2.0,)]
+    @test nn(plain_batch, untyped) ≈
+          apply_parametric(nn.model, plain_batch, untyped, params(nn))
+end
+
+# A step hands its energy network the half of the state it differentiates with the flattened
+# parameters of the system below it. The generated gradient function reads the entries it was built
+# for and ignores the rest, so a `μ` of the wrong length would be silently truncated: the step
+# refuses it and names both lengths.
+@testset "a step refuses an energy input of the wrong length ($T)" for T in REAL_ELTYPES
+    dimension, width, nhidden = 2, 3, 1
+    μ = (m = 1.0,)
+    layer = SymplecticEulerA(
+        SymbolicKineticEnergy(dimension, width, nhidden, tanh; parameters = μ);
+        return_parameters = false)
+    ps = params(NeuralNetwork(Chain(layer), T)).L1
+    z = (q = rand(T, dimension ÷ 2), p = rand(T, dimension ÷ 2))
+
+    # the state has one row and the energy network takes two: the state and the one entry of `μ`
+    step = layer(z, μ, ps)
+    @test step isa NamedTuple{(:q, :p)}
+    @test eltype(step.q) === T
+
+    # one entry more in `μ` is one row more in the input of the energy network
+    message = argument_error_message(() -> layer(z, (m = 1.0, ω = 2.0), ps))
+    @test occursin("takes 2 inputs", message)
+    @test occursin("has 3", message)
 end
 
 # The two steps of one integrator, against the gradient of their own energies, which the test takes
@@ -204,6 +243,12 @@ end
         layer = Layer(energy(4, 3, 1, tanh; parameters = μ); return_parameters = false)
         nn = NeuralNetwork(Chain(layer), Float64)
         ps = params(nn).L1
+        # Both fields are declared with the layer's own type parameter rather than with an abstract
+        # supertype, so that inference sees the network's and the gradient function's type behind
+        # them.
+        @test fieldtype(typeof(layer), :gradient_function) ===
+              typeof(layer.gradient_function)
+        @test fieldtype(typeof(layer), :energy_model) === typeof(layer.energy_model)
         z = (q = rand(2), p = rand(2))
         @test @inferred(layer(z, μ, ps)) isa NamedTuple{(:q, :p)}
         @test @inferred(layer(rand(4), μ, ps)) isa Vector{Float64}

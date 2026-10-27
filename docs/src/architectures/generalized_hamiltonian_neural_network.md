@@ -21,10 +21,10 @@ a symplectic map from the state to the state one time step later, and it is the 
 
 Each energy network takes the parameters ``\mu`` of the *system* beside the state it differentiates,
 so one network covers a range of problems instead of one problem instance. The forward pass is
-[`apply_parametric`](@extref GeometricMachineLearning apply_parametric), reached as the functor
+[`apply_parametric`](@extref GeometricMachineLearning.apply_parametric), reached as the functor
 `nn(x, μ)` of the `NeuralNetwork` built around the architecture, and a network trains on a
-[`ParametricDataLoader`](@extref GeometricMachineLearning ParametricDataLoader) with
-[`ParametricLoss`](@extref GeometricMachineLearning ParametricLoss) — the default loss `train!` takes
+[`ParametricDataLoader`](@extref GeometricMachineLearning.ParametricDataLoader) with
+[`ParametricLoss`](@extref GeometricMachineLearning.ParametricLoss) — the default loss `train!` takes
 for that loader.
 
 ```julia
@@ -42,21 +42,22 @@ vector that enters an energy network, and the values arrive with each call, one 
 ## Forcing and dissipation
 
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref) puts a
-[`ForcingLayer`](@extref GeometricMachineLearning ForcingLayer) between the two steps of each
+[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) between the two steps of each
 integrator: a forcing enters the ``\dot{p}`` equation, so it precedes the step that changes ``p``.
 Its `forcing_type` names what the forcing reads — `:Q`, `:P` or `:QP` — as in
-[`ForcedSympNet`](@extref GeometricMachineLearning ForcedSympNet).
+[`ForcedSympNet`](@extref GeometricMachineLearning.ForcedSympNet).
 
 ## The symbolic pullback
 
 [`SymbolicPullback`](@ref SymbolicPullback(::HamiltonianArchitecture)) is the pullback of
 [`HNNLoss`](@ref) and takes a scalar Hamiltonian. A generalized Hamiltonian network is a map rather
 than a scalar Hamiltonian, so its pullback is
-[`SymbolicPullback(arch, ParametricLoss())`](@ref SymbolicPullback(::HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, ::GeometricMachineLearning.ParametricLoss)),
+[`SymbolicPullback(arch, ParametricLoss())`](@ref SymbolicPullback(::Union{HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, HamiltonianNeuralNetworks.ForcedGeneralizedHamiltonianArchitecture}, ::HamiltonianNeuralNetworks.ParametricLoss)),
 which generates the gradient of the parametric loss in closed form. It is one expression for the
 whole chain, so a chain of more than one integrator is refused: each step inlines the generated
-gradient of its energy network, and the expression then grows multiplicatively. `train!` takes a
-`ZygotePullback` of the same loss by default, which has no such limit.
+gradient of its energy network, and such an expression then holds one copy of it per integrator,
+each inside the next. `train!` takes a `ZygotePullback` of the same loss by default, which has no
+such limit.
 
 ## Library Functions
 
@@ -70,7 +71,6 @@ HamiltonianNeuralNetworks.build_gradient
 HamiltonianNeuralNetworks.SymplecticEuler
 HamiltonianNeuralNetworks.SymplecticEulerA
 HamiltonianNeuralNetworks.SymplecticEulerB
-HamiltonianNeuralNetworks.SymbolicPullback(::HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, ::GeometricMachineLearning.ParametricLoss)
-HamiltonianNeuralNetworks.SymbolicPullback(::HamiltonianNeuralNetworks.ForcedGeneralizedHamiltonianArchitecture, ::GeometricMachineLearning.ParametricLoss)
+HamiltonianNeuralNetworks.SymbolicPullback(::Union{HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, HamiltonianNeuralNetworks.ForcedGeneralizedHamiltonianArchitecture}, ::HamiltonianNeuralNetworks.ParametricLoss)
 HamiltonianNeuralNetworks._check_symbolic_pullback_is_tractable
 ```

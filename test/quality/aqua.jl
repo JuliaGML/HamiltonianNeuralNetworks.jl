@@ -25,7 +25,6 @@ const NON_PUBLIC_QUALIFIED = (
     :_check_forcing_type,                         # GeometricMachineLearning
     :Jacobian, :symbolic_parameter_gradient,      # SymbolicNeuralNetworks
     :symbolic_differentials, :symbolic_derivative, # SymbolicNeuralNetworks
-    :symbolic_variables,                          # SymbolicNeuralNetworks
     :variables)                                   # Symbolics
 const NON_PUBLIC_IMPORTS = (
     :AbstractExplicitLayer, :Architecture,       # AbstractNeuralNetworks

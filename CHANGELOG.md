@@ -39,21 +39,22 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 
 * **The generalized and forced Hamiltonian networks, with the parameters of the system.**
   `GeneralizedHamiltonianArchitecture` is implemented rather than a constructor that raises: it is a
-  chain of `n_integrators` symplectic-Euler steps, each differentiating a learned kinetic and a
-  learned potential energy, and its forward pass takes the parameters of the *system* beside the
-  state — `nn(x, μ)`, or `apply_parametric` — so one network covers a range of problems rather than
-  one instance. `ForcedGeneralizedHamiltonianArchitecture` puts a `ForcingLayer` between the two
-  steps of each integrator and is exported beside the other two architectures. `SymbolicEnergy` with
-  its kinetic and potential constructors, `SymplecticEuler` with its `A` and `B` steps and
-  `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
+  chain of `n_integrators` pairs of symplectic-Euler steps, each pair differentiating a learned
+  kinetic and a learned potential energy, and its forward pass takes the parameters of the *system*
+  beside the state — `nn(x, μ)`, or `apply_parametric` — so one network covers a range of problems
+  rather than one instance. `ForcedGeneralizedHamiltonianArchitecture` puts a `ForcingLayer` between
+  the two steps of each integrator and is exported beside the other two architectures.
+  `SymbolicEnergy` with its kinetic and potential constructors, `SymplecticEuler` with its `A` and
+  `B` steps and `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
 * **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
   generalized or forced network, generated in closed form: the per-sample gradients of the surrogate
   `½‖rᵢ‖²`, summed over the batch and scaled by the residual and target norms that loss gives that
   batch form, in both precisions. Its value and gradient are those of `ParametricLoss` on the batch,
   which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as a `(q, p)` pair of `d × 1 × k`
   ones; the loss weighs the two halves of a pair by their own norms, and the pullback does the same.
-  A chain of more than one integrator is refused with an `ArgumentError`, because one expression for
-  the whole chain does not finish building; `train!` takes the `ZygotePullback` of the same loss.
+  A chain of more than one integrator is refused with an `ArgumentError`, because each step of the
+  chain inlines the generated gradient of its energy network and one expression for the whole chain
+  grows with every integrator; `train!` takes the `ZygotePullback` of the same loss.
   `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and refuses a
   generalized architecture, which is a map rather than a scalar Hamiltonian.
 * **The forced generalized Hamiltonian network's reproduction script.** It trains the three forcing
