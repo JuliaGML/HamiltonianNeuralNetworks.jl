@@ -51,6 +51,9 @@ const PARAMETRIZED = GeneralizedHamiltonianArchitecture(4; width = 2, nhidden = 
     parameters = SYSTEM_PARAMETERS)
 const PARAMETRIZED_TWO_INTEGRATORS = GeneralizedHamiltonianArchitecture(4; width = 2,
     nhidden = 1, n_integrators = 2, parameters = SYSTEM_PARAMETERS)
+const FORCED_TWO_INTEGRATORS = ForcedGeneralizedHamiltonianArchitecture(
+    4; width = 2, nhidden = 1,
+    n_integrators = 2, parameters = SYSTEM_PARAMETERS)
 
 const LAYERWISE = SymbolicNeuralNetworks.SymbolicPullback(
     SymbolicNeuralNetwork(PARAMETER_FREE), FeedForwardLoss(); layerwise = :auto)
@@ -81,7 +84,7 @@ const PARAMETRIZED_TWO_INTEGRATOR_PULLBACK = SymbolicNeuralNetworks.SymbolicPull
 end
 
 # A parameter-free network builds both constructions, and the two agree with each other and with
-# `Zygote`. `:auto` is the layerwise one, which it was not before the seam was declared.
+# `Zygote`. `:auto` is the layerwise one.
 @testset "a parameter-free GHNN agrees with the monolithic path and with Zygote ($T)" for T in REAL_ELTYPES
     nn = NeuralNetwork(PARAMETER_FREE, T)
     input, output = rand(T, 4), rand(T, 4)
@@ -91,9 +94,10 @@ end
     @test construction(MONOLITHIC) != :LayerwiseGradientFunction
 
     gradient = LAYERWISE.fun(input, output, params(nn))(seed)
+    monolithic_gradient = MONOLITHIC.fun(input, output, params(nn))(seed)
     @test eltype(flat(gradient)) === T
-    @test maximum_difference(gradient, MONOLITHIC.fun(input, output, params(nn))(seed)) <
-          tolerance(T)
+    @test eltype(flat(monolithic_gradient)) === T
+    @test maximum_difference(gradient, monolithic_gradient) < tolerance(T)
 
     reference = Zygote.gradient(p -> FeedForwardLoss()(nn.model, p, input, output),
         params(nn))[1]
@@ -119,8 +123,18 @@ end
     @test maximum_difference(gradient, reference) < tolerance(T)
 
     @test_throws ArgumentError SymbolicPullback(PARAMETRIZED_TWO_INTEGRATORS, ParametricLoss())
-    @test_throws r"SymbolicNeuralNetworks\.SymbolicPullback\(SymbolicNeuralNetwork\(arch\), ParametricLoss\(\)\)" SymbolicPullback(
+    @test_throws r"SymbolicNeuralNetworks\.SymbolicPullback\(SymbolicNeuralNetwork\(arch\), ParametricLoss\(\)\)` composes the pullback layer by layer instead, with one `μ` per call" SymbolicPullback(
         PARAMETRIZED_TWO_INTEGRATORS, ParametricLoss())
+
+    # A forced chain holds a `ForcingLayer` between two steps, which the layerwise construction cannot
+    # seed, so the refusal names the traced pullback alone.
+    @test_throws ArgumentError SymbolicPullback(FORCED_TWO_INTEGRATORS, ParametricLoss())
+    @test_throws r"cannot seed this architecture's `ForcingLayer`" SymbolicPullback(
+        FORCED_TWO_INTEGRATORS, ParametricLoss())
+    @test_throws ArgumentError SymbolicNeuralNetworks.SymbolicPullback(
+        SymbolicNeuralNetwork(FORCED_TWO_INTEGRATORS), ParametricLoss(); layerwise = true)
+    @test_throws r"`ForcingLayer`\) cannot be seeded" SymbolicNeuralNetworks.SymbolicPullback(
+        SymbolicNeuralNetwork(FORCED_TWO_INTEGRATORS), ParametricLoss(); layerwise = true)
 end
 
 # The parameters of the system reach the gradient: they cross the seam as the carried datum, in the
@@ -147,6 +161,8 @@ end
         params(nn))(seed))
     column_gradient = sum(flat(PARAMETRIZED_PULLBACK.fun((batch[:, i], SYSTEM_PARAMETERS),
                               batch_output[:, i], params(nn))(seed)) for i in 1:3)
+    @test eltype(batch_gradient) === T
+    @test eltype(column_gradient) === T
     @test maximum(abs, batch_gradient - column_gradient) < tolerance(T)
 
     # The monolithic construction cannot be built for this architecture at all: it traces the chain
@@ -154,7 +170,7 @@ end
     # network's first layer is short of the components it reads.
     @test_throws ArgumentError SymbolicNeuralNetworks.SymbolicPullback(
         SymbolicNeuralNetwork(PARAMETRIZED), FeedForwardLoss(); layerwise = false)
-    @test_throws r"the energy network of this layer takes 4 inputs and this call has 2" SymbolicNeuralNetworks.SymbolicPullback(
+    @test_throws r"^ArgumentError: the energy network of this layer takes 4 inputs and this call has 2\.$" SymbolicNeuralNetworks.SymbolicPullback(
         SymbolicNeuralNetwork(PARAMETRIZED), FeedForwardLoss(); layerwise = false)
 end
 
@@ -215,7 +231,8 @@ end
 
     # the state alone is a seam only for a system without parameters
     @test_throws ArgumentError SymbolicNeuralNetworks.seam_arguments(parametrized_layer, state)
-    @test_throws r"the system of this `SymplecticEuler` has 2 parameter\(s\)" SymbolicNeuralNetworks.seam_arguments(
+    @test_throws r"^ArgumentError: the system of this `SymplecticEuler` has 2 parameter\(s\), so the " *
+                 r"pullback has to be given `\(state, system parameters\)` rather than the state alone\.$" SymbolicNeuralNetworks.seam_arguments(
         parametrized_layer, state)
 
     # `_seam_state` stacks a `(q, p)` pair whatever the pair of array types is, `p` below `q`

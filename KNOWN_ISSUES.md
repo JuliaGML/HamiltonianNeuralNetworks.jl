@@ -45,6 +45,21 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   belongs with the data signatures of the losses as a whole: either each loss accepts only the data
   its vector field can take, or `(q, p)` data is converted before it reaches the field.
 
+### K22 · `test/pullbacks/symbolic_pghnn_pullback.jl` takes 62–64 s, above the 60 s that a file of the `core` group may take.
+
+- **location:** `test/pullbacks/symbolic_pghnn_pullback.jl`
+- **kind:** found late
+- **found:** 2026-10-28, in the review of the layerwise seam, round 1
+- **evidence:**
+  `run-tests.jl` names every `core` file that takes more than 60 s, and this one is named in every
+  run on this machine: `D6: test/pullbacks/symbolic_pghnn_pullback.jl runs 62.3 s cold, above the
+  60 s of a core file` in the review's `core` run, 64.0 s cold in the build's, and 64.4 s of testset
+  time in a `Pkg.test()` at a load average of 39.7. The file builds a `SymplecticEuler` and the
+  architecture around it, the type that the layerwise seam gives two fields and a type parameter to,
+  and the base was not timed there, so no measurement separates that change from the rest of the
+  time. Moving the file to the `slow` group is what closes it; the group of a test file is a decision
+  of the plan that adds it.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.

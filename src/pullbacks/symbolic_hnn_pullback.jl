@@ -73,14 +73,19 @@ integrators inlines that expression inside the next step's, so one expression fo
 copy of it per integrator, each inside the next, and grows multiplicatively with the number of
 integrators.
 
-The way out is not to trace the inlined chain but to compose the pullback layer by layer:
+The way out, for a [`GeneralizedHamiltonianArchitecture`](@ref), is not to trace the inlined chain
+but to compose the pullback layer by layer:
 `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` puts fresh
 symbolic variables between two layers instead, and so has no such limit, for any number of
 integrators. The parameters of the system cross between the layers as the seam's carried datum, which
-[`SymplecticEuler`](@ref) declares; one set of them per call is what it takes, so its gradient is the
-layer-by-layer gradient of one sample per `μ`.
+[`SymplecticEuler`](@ref) declares; it takes one `μ` per call, so the gradient of a `2d × k` matrix
+with one `μ` is the sum of the gradients of its columns. That construction does not cover a
+[`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose
+[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) it cannot seed.
+
 `ZygotePullback(ParametricLoss())` differentiates through the chain rather than generating an
-expression for it, and has no such limit either; it is what `train!` takes by default.
+expression for it, and has no such limit either; it is what `train!` takes by default, and it is the
+way out of the refusal for a forced architecture.
 """
 function _check_symbolic_pullback_is_tractable(
         arch::Union{
@@ -90,11 +95,24 @@ function _check_symbolic_pullback_is_tractable(
         "cannot build *this* `SymbolicPullback` for an architecture with `n_integrators` = $(n): " *
         "it builds one expression for the whole network, which grows multiplicatively with the " *
         "number of integrators and already exceeds 10⁹ terms at two, so the build does not " *
-        "finish. `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), " *
-        "ParametricLoss())` composes the pullback layer by layer instead, one sample per `μ`, and " *
-        "has no such limit; `ZygotePullback(ParametricLoss())`, which is what `train!` takes by " *
-        "default, is the other option."))
+        "finish. " * _alternative_pullbacks(arch)))
     nothing
+end
+
+# What the refusal names as the way out, per architecture: the layerwise pullback of
+# `SymbolicNeuralNetworks` composes a generalized chain layer by layer and has no such limit, and on
+# a forced chain it declines, because a `ForcingLayer` cannot be seeded.
+function _alternative_pullbacks(::GeneralizedHamiltonianArchitecture)
+    "`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` " *
+    "composes the pullback layer by layer instead, with one `μ` per call, and has no such limit; " *
+    "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, is the other " *
+    "option."
+end
+
+function _alternative_pullbacks(::ForcedGeneralizedHamiltonianArchitecture)
+    "`SymbolicNeuralNetworks` cannot seed this architecture's `ForcingLayer`, so its layerwise " *
+    "construction does not build here; `ZygotePullback(ParametricLoss())`, which is what `train!` " *
+    "takes by default, is the option."
 end
 
 @doc raw"""

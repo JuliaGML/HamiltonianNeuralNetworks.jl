@@ -244,7 +244,7 @@ end
     @test occursin("n_integrators", message)
     @test occursin("ZygotePullback", message)
 
-    # the forced architecture is counted by its own integrators, and refused with the same message
+    # the forced architecture is counted by its own integrators, and refused for the same reason
     forced = ForcedGeneralizedHamiltonianArchitecture(2; n_integrators = 2,
         parameters = SYSTEM_PARAMETERS)
     @test_throws ArgumentError SymbolicPullback(forced, ParametricLoss())
