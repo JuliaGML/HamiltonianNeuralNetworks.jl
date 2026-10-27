@@ -321,13 +321,13 @@ The constructor takes the following input arguments:
 # The parameter count
 
 One integrator holds two energy networks, one kinetic and one potential, and neither is shared, so
-the network has `2 n_integrators` of them. Each is a first dense layer over `dim ÷ 2 + |\\mu|` rows
+the network has `2 n_integrators` of them. Each is a first dense layer over `dim ÷ 2 + |\mu|` rows
 and `width` columns, `nhidden` hidden layers of width `width`, and a biasless `Linear(width, 1)`, so
 the whole network has
 
 ```math
-2\\,n_\\mathrm{integrators}\\left[(\\mathrm{dim}/2 + |\\mu| + 1)\\mathrm{width} +
-\\mathrm{nhidden}\\,\\mathrm{width}(\\mathrm{width} + 1) + \\mathrm{width}\\right]
+2\,n_\mathrm{integrators}\left[(\mathrm{dim}/2 + |\mu| + 1)\mathrm{width} +
+\mathrm{nhidden}\,\mathrm{width}(\mathrm{width} + 1) + \mathrm{width}\right]
 ```
 
 parameters. The thesis counts the first dense layer among the hidden layers, i.e. as `nhidden + 1` of

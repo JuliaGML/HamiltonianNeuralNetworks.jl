@@ -47,10 +47,11 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   its kinetic and potential constructors, `SymplecticEuler` with its `A` and `B` steps and
   `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
 * **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
-  generalized or forced network, generated in closed form: the per-sample gradients of the
-  surrogate `½‖rᵢ‖²` summed over the batch and scaled by the two norms of the loss's residual, in
-  both precisions. Its value and gradient are those of `ParametricLoss` on the batch, which a
-  `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as a `(q, p)` pair of `d × 1 × k` ones.
+  generalized or forced network, generated in closed form: the per-sample gradients of the surrogate
+  `½‖rᵢ‖²`, summed over the batch and scaled by the residual and target norms that loss gives that
+  batch form, in both precisions. Its value and gradient are those of `ParametricLoss` on the batch,
+  which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as a `(q, p)` pair of `d × 1 × k`
+  ones; the loss weighs the two halves of a pair by their own norms, and the pullback does the same.
   A chain of more than one integrator is refused with an `ArgumentError`, because one expression for
   the whole chain does not finish building; `train!` takes the `ZygotePullback` of the same loss.
   `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and refuses a

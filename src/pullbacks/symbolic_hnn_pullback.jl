@@ -102,27 +102,30 @@ a [`GeneralizedHamiltonianArchitecture`](@ref) or a
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose forward pass takes the parameters of the
 *system*.
 
-Its value is the loss on the batch, ``\\ell = \\|R\\|/\\|Y\\|`` with ``R = \\mathrm{NN}(X, \\mu) - Y``.
-Its gradient is ``\\Delta \\sum_i \\nabla_\\theta \\tfrac12\\|r_i\\|^2 / (\\|R\\|\\,\\|Y\\|)``: the
-generated per-sample gradient of the surrogate ``\\tfrac12\\|r_i\\|^2``, summed over the batch and
-scaled by the two norms of the value's residual. The gradient has the parameters' element type, and a
-zero residual gives a zero gradient.
+Its value is `ParametricLoss` on the batch, and its gradient is the gradient of that value. On a
+stacked batch the value is ``\ell = \|R\|/\|Y\|`` with ``R = \mathrm{NN}(X, \mu) - Y``, and its
+gradient is ``\Delta \sum_i \nabla_\theta \tfrac12\|r_i\|^2 / (\|R\|\,\|Y\|)``: the generated
+per-sample gradient of the surrogate ``\tfrac12\|r_i\|^2``, summed over the batch and scaled by the
+two norms. On a `(q, p)` batch the value is ``\ell = (\|R_q\| + \|R_p\|)/(\|Y_q\| + \|Y_p\|)`` — each
+half scaled by its own norm, which is what the loss does with a `(q, p)` pair — and the gradient is
+``\Delta (\sum_i \nabla_\theta \tfrac12\|r_{q,i}\|^2/\|R_q\| + \sum_i \nabla_\theta
+\tfrac12\|r_{p,i}\|^2/\|R_p\|) / (\|Y_q\| + \|Y_p\|)``. The gradient has the parameters' element
+type, and a zero residual gives a zero gradient.
 
-The parameters of the system that `arch` holds fix the shape of `\\mu`, and with it the length of the
-input of the generated function: the entries of `\\mu` follow the state of a sample there, and the
+The parameters of the system that `arch` holds fix the shape of `\mu`, and with it the length of the
+input of the generated function: the entries of `\mu` follow the state of a sample there, and the
 symbolic expression splits them off again. Their *values* enter with each call, one per sample.
 
 # The batch
 
 The pullback takes what a
 [`ParametricDataLoader`](@extref GeometricMachineLearning ParametricDataLoader) draws: an input and
-an output of `2d \\times 1 \\times k` with `k` values of `\\mu`, or of `(q, p)` of
-`d \\times 1 \\times k`. A matrix with one `\\mu` is not one of the forms `apply_parametric` takes.
+an output of `2d \times 1 \times k` with `k` values of `\mu`, or a `(q, p)` pair of
+`d \times 1 \times k`. A matrix with one `\mu` is not one of the forms `apply_parametric` takes.
 
-The two norms are those of the residual and the target *stacked*, `q` above `p`, so that a
-`(q, p)` batch and its stacked view give one value and one gradient; `ParametricLoss` itself
-averages the two halves of a `(q, p)` pair, and its value on that one form differs from this one by
-that convention.
+The two batch forms are two quantities on one batch, because the loss weighs them differently:
+stacked, `q` above `p`, one norm covers both halves; as a pair, each half is scaled by its own. Each
+form's value and gradient are those of `ParametricLoss` on that same form.
 
 `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and keeps its
 signature; a generalized architecture is refused there.
@@ -146,29 +149,32 @@ function SymbolicPullback(
 
     output = model(
         (sinput[1:state_dimension], symbolic_system_parameters), symbolic_network_parameters)
-    residual = _stacked_state(output) - soutput
-    gradient = SymbolicNeuralNetworks.symbolic_parameter_gradient(
-        sum(abs2, residual) / 2, symbolic_network_parameters)
+    # One surrogate per half of the state, generated together: a `(q, p)` batch scales the gradient
+    # of each half by that half's own residual norm, and a stacked batch by the norm of their sum, so
+    # the two conventions come out of one function rather than two. The symbolic model returns a
+    # stacked state, `q` above `p`, for either architecture.
+    half = state_dimension ÷ 2
+    residuals = (q = output[1:half] - soutput[1:half],
+        p = output[(half + 1):end] - soutput[(half + 1):end])
+    gradient = map(
+        residual -> SymbolicNeuralNetworks.symbolic_parameter_gradient(
+            sum(abs2, residual) / 2, symbolic_network_parameters),
+        residuals)
     gradient_function = SymbolicNeuralNetworks.build_nn_function(
         gradient, symbolic_network_parameters, sinput, soutput;
         reduce = +, cse = cse, inplace = inplace)
     SymbolicPullback(ParametricLoss(), _PGHNNParameterGradient(gradient_function))
 end
 
-# The `fun` of the parametric pullback; it holds the generated gradient and selects the call method
+# The `fun` of the parametric pullback; it holds the generated gradient and selects the call methods
 # below.
 struct _PGHNNParameterGradient{FT}
     gradient_function::FT
 end
 
-# A state with its halves stacked, `q` above `p`: what a `(q, p)` pair holds once it is one array,
-# and a state that already is one.
-_stacked_state(z::NamedTupleOfArrays{<:Any, (:q, :p)}) = vcat(z.q, z.p)
-_stacked_state(x::AbstractArray) = x
-
-# The batch as the generated function takes it: one column per sample, the flattened parameters of
-# the system of that sample below its state. The state and the target are stacked this way, `q` above
-# `p`, as the data of a `ParametricDataLoader` are whenever they are not already stacked.
+# The batch as the generated function takes it: one column per sample. The state and the target are
+# stacked this way, `q` above `p`, as the data of a `ParametricDataLoader` are whenever they are not
+# already stacked.
 _sample_columns(x::AbstractArray{<:Any, 3}) = reshape(x, size(x, 1), size(x, 3))
 function _sample_columns(x::NamedTupleOfArrays{<:Any, (:q, :p)})
     vcat(_sample_columns(x.q), _sample_columns(x.p))
@@ -183,20 +189,38 @@ end
 
 function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
         ps::NetworkParameters, model,
-        (input, output,
-            μs)::Tuple{<:ArrayOrNamedTuple, <:ArrayOrNamedTuple, <:AbstractVector})
-    prediction = apply_parametric(model, input, μs, ps)
-    # The residual and the target are measured in the stacked view of the batch, so that a `(q, p)`
-    # batch and its stacked view give one value and one gradient.
+        (input, output, μs)::Tuple{<:AbstractArray, <:AbstractArray, <:AbstractVector})
     target = _sample_columns(output)
-    norm_R = norm(_sample_columns(prediction) - target)
+    norm_R = norm(_sample_columns(apply_parametric(model, input, μs, ps)) - target)
     norm_Y = norm(target)
     # `pinv`: a zero residual gives the zero gradient, not `NaN`. Each norm divides each entry on its
     # own, because `‖R‖‖Y‖` overflows, and its inverse underflows, where neither norm does.
     inv_R = pinv(norm_R)
     TP = parameter_eltype(ps)
     gradient_function = pb.fun.gradient_function
+    # One norm over both halves, so the gradients of the two halves add up before they are scaled.
     norm_R / norm_Y,
-    Δ -> mapstorage(x -> TP.(x .* Δ .* inv_R ./ norm_Y),
-        gradient_function(_sample_input(input, μs), target, ps))
+    Δ -> mapstorage((g_q, g_p) -> TP.((g_q .+ g_p) .* Δ .* inv_R ./ norm_Y),
+        gradient_function(_sample_input(input, μs), target, ps)...)
+end
+
+function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
+        ps::NetworkParameters, model,
+        (input,
+            output,
+            μs)::Tuple{<:NamedTupleOfArrays{<:Any, (:q, :p)},
+            <:NamedTupleOfArrays{<:Any, (:q, :p)}, <:AbstractVector})
+    prediction = apply_parametric(model, input, μs, ps)
+    target_q, target_p = _sample_columns(output.q), _sample_columns(output.p)
+    norm_R_q = norm(_sample_columns(prediction.q) - target_q)
+    norm_R_p = norm(_sample_columns(prediction.p) - target_p)
+    norm_Y = norm(target_q) + norm(target_p)
+    # `pinv` per half: a zero residual in one half gives the zero gradient there, not `NaN`.
+    inv_R_q, inv_R_p = pinv(norm_R_q), pinv(norm_R_p)
+    TP = parameter_eltype(ps)
+    gradient_function = pb.fun.gradient_function
+    # Each half is scaled by its own residual norm, so the two gradients cannot be added first.
+    (norm_R_q + norm_R_p) / norm_Y,
+    Δ -> mapstorage((g_q, g_p) -> TP.((g_q .* inv_R_q .+ g_p .* inv_R_p) .* Δ ./ norm_Y),
+        gradient_function(_sample_input(input, μs), _sample_columns(output), ps)...)
 end

@@ -67,8 +67,9 @@ end
 end
 
 # A `ParametricDataLoader` draws one of two batch forms, and the pullback takes both: a
-# `2d × 1 × k` tensor, or a `(q, p)` pair of `d × 1 × k` tensors. One batch gives one value and one
-# gradient in either form.
+# `2d × 1 × k` tensor, or a `(q, p)` pair of `d × 1 × k` tensors. Each form's value and gradient are
+# those of `ParametricLoss` on that same form, and the loss weighs the two halves of a pair by their
+# own residual norms, so the two forms are two quantities on one batch.
 @testset "the batch forms of a ParametricDataLoader ($T)" for T in REAL_ELTYPES
     n_samples = 3
     architecture = single_integrator()
@@ -77,19 +78,38 @@ end
     μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0)), (m = T(3.0), ω = T(1.0))]
     input = rand(T, 2, 1, n_samples)
     output = rand(T, 2, 1, n_samples)
+    @test size(input) == (2, 1, n_samples)
 
     value, back = pullback(params(nn), nn.model, (input, output, μs))
-    gradient = back(one(value))
-    @test size(input) == (2, 1, n_samples)
+    @test value ≈ ParametricLoss()(nn.model, params(nn), input, output, μs)
+    reference_value, reference_back = ZygotePullback(ParametricLoss())(
+        params(nn), nn.model, (input, output, μs))
+    @test value ≈ reference_value rtol = T(√eps(T))
+    foreach_parameter(back(one(value)), reference_back(one(reference_value))) do leaf,
+    reference
+        @test eltype(leaf) === T
+        @test leaf ≈ reference rtol = 1000 * eps(T)
+    end
 
     q, p = input[1:1, :, :], input[2:2, :, :]
     q_output, p_output = output[1:1, :, :], output[2:2, :, :]
+    paired_input = (q = q, p = p)
+    paired_output = (q = q_output, p = p_output)
     paired_value, paired_back = pullback(params(nn), nn.model,
-        ((q = q, p = p), (q = q_output, p = p_output), μs))
-    @test paired_value ≈ value
-    foreach_parameter(paired_back(one(paired_value)), gradient) do paired_leaf, leaf
-        @test paired_leaf ≈ leaf
+        (paired_input, paired_output, μs))
+    @test paired_value ≈
+          ParametricLoss()(nn.model, params(nn), paired_input, paired_output, μs)
+    paired_reference_value, paired_reference_back = ZygotePullback(ParametricLoss())(
+        params(nn), nn.model, (paired_input, paired_output, μs))
+    @test paired_value ≈ paired_reference_value rtol = T(√eps(T))
+    foreach_parameter(paired_back(one(paired_value)),
+        paired_reference_back(one(paired_reference_value))) do leaf, reference
+        @test eltype(leaf) === T
+        @test leaf ≈ reference rtol = 1000 * eps(T)
     end
+    # The two conventions are two quantities, and the batch above separates them: one stacked norm
+    # for both halves against one norm per half.
+    @test !isapprox(paired_value, value, rtol = T(√eps(T)))
 
     # One sample is a batch of one column, and its value is the loss on that column.
     single_value, single_back = pullback(params(nn), nn.model,
@@ -97,6 +117,25 @@ end
     @test single_value ≈ ParametricLoss()(nn.model, params(nn), input[:, :, 1:1],
         output[:, :, 1:1], [μs[1]])
     @test keys(single_back(one(single_value))) == keys(params(nn))
+end
+
+# A `(q, p)` batch whose residual vanishes in both halves has a zero gradient there, not `NaN`: each
+# half's residual norm enters through `pinv`.
+@testset "a zero residual of a `(q, p)` batch gives a zero gradient ($T)" for T in REAL_ELTYPES
+    architecture = single_integrator()
+    nn = NeuralNetwork(architecture, T)
+    pullback = SymbolicPullback(architecture, ParametricLoss())
+    input = rand(T, 2, 1, 2)
+    μs = [(m = T(1.0), ω = T(2.0)), (m = T(2.0), ω = T(3.0))]
+    paired_input = (q = input[1:1, :, :], p = input[2:2, :, :])
+    prediction = HamiltonianNeuralNetworks.apply_parametric(nn.model, paired_input, μs,
+        params(nn))
+    output = (q = prediction.q, p = prediction.p)
+    value, back = pullback(params(nn), nn.model, (paired_input, output, μs))
+    @test value == 0
+    foreach_parameter(back(one(value))) do leaf
+        @test all(iszero, leaf)
+    end
 end
 
 # The symbolic input is as long as the flattened parameters of the system, not as its keys: a leaf
