@@ -69,3 +69,41 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
 
   The training testset of the `(q, p)` form therefore asserts the length and the finiteness of the
   history and the change of every leaf, and not its element type.
+
+## Raised while adding the parametric networks, not addressed
+
+### K17 · The `GeometricMachineLearning` compat bound admits the registered 0.8.0, which has none of the parametric names the package imports.
+
+- **location:** `Project.toml:22`
+- **kind:** defect
+- **found:** 2026-10-27, in the pre-pull-request verification of the parametric networks
+- **evidence:**
+  The package imports `ForcingLayer`, `ParametricLoss` and `apply_parametric` from
+  GeometricMachineLearning (`src/HamiltonianNeuralNetworks.jl:19`), and reaches
+  `_flatten_system_parameters`, `concatenate_array_with_parameters`, `assign_q_and_p` and
+  `_check_forcing_type` through the module's name. The registered 0.8.0 has six of those seven names
+  nowhere: its tree is `7616b841d9f7fca26df41a83ea8c2496ea31d25a`, which is this checkout's
+  `v0.8.0`, `git grep -l` finds `ForcingLayer`, `ParametricLoss`, `apply_parametric`,
+  `_flatten_system_parameters`, `concatenate_array_with_parameters` and `_check_forcing_type` at no
+  file under `v0.8.0:src/`, and `assign_q_and_p` is the one it has. A
+  resolve that chose that release therefore raises an `UndefVarError` on load. It cannot be seen
+  here, because `GeometricMachineLearning`'s own `main` declares `version = "0.8.0"`, which the
+  bound admits, while `[sources]` takes GML from that branch. The bound becomes `"0.9"` in the
+  change that removes `[sources]` from this file: the parametric API is GML 0.9's, and a release
+  against 0.8.0 has no such names to import.
+
+### K18 · A forced architecture accepts a negative `n_forcing_layers` and refuses it later, with a message that names no parameter.
+
+- **location:** `src/architectures/forced_generalized_hamiltonian_neural_network.jl:30`
+- **kind:** defect
+- **found:** 2026-10-27, in the pre-pull-request verification of the parametric networks
+- **evidence:**
+  `ForcedGeneralizedHamiltonianArchitecture`'s constructor checks `dim`, `nhidden`, `n_integrators`
+  and `forcing_type` (`:36-42`) and never checks `n_forcing_layers`, which it forwards to
+  `ForcingLayer` (`:61-62`). The architecture therefore constructs. The failure comes later, in
+  `Chain(arch)`: `ForcingLayer`'s `_forcing_model` builds its hidden layers with
+  `ntuple(_ -> Dense(width, width, activation), nhidden)`, so a negative count raises
+  `ArgumentError: tuple length should be ≥ 0` there, naming neither the architecture nor the
+  parameter. Its sibling refuses `nhidden = -1` at construction, with a message that names the value.
+  The fix is a check at construction with a message naming `n_forcing_layers`, which `_check_nhidden`
+  cannot supply, since its message names an energy network.

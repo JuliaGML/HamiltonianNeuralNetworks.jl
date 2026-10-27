@@ -35,12 +35,12 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   utilities; `smoke_size` reads `HNN_SMOKE`, and `scripts/runscripts.jl` runs them.
 
 * **The generalized and forced Hamiltonian networks, with the parameters of the system.**
-  `GeneralizedHamiltonianArchitecture` is implemented rather than a constructor that raises: it is a
-  chain of `n_integrators` pairs of symplectic-Euler steps, each pair differentiating a learned
-  kinetic and a learned potential energy, and its forward pass takes the parameters of the *system*
-  beside the state — `nn(x, μ)`, or `apply_parametric` — so one network covers a range of problems
-  rather than one instance. `ForcedGeneralizedHamiltonianArchitecture` puts a `ForcingLayer` between
-  the two steps of each integrator and is exported beside the other two architectures.
+  `GeneralizedHamiltonianArchitecture` is a chain of `n_integrators` pairs of symplectic-Euler steps,
+  each pair differentiating a learned kinetic and a learned potential energy, and its forward pass
+  takes the parameters of the *system* beside the state — `nn(x, μ)`, or `apply_parametric` — so one
+  network covers a range of problems rather than one instance.
+  `ForcedGeneralizedHamiltonianArchitecture` puts a `ForcingLayer` between the two steps of each
+  integrator and is exported beside the other two architectures.
   `SymbolicEnergy` with its kinetic and potential constructors, `SymplecticEuler` with its `A` and
   `B` steps and `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
 * **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
