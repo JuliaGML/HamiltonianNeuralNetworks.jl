@@ -36,13 +36,6 @@ function _check_width(width::Integer)
     width
 end
 
-# The length of the flat vector the parameters of the system occupy in the input of an energy
-# network, which is what its first layer takes beside the state. It is a length and not the values:
-# the `μ` of a call is the one that enters.
-function _parameter_length(parameters::OptionalParameters)
-    length(first(GeometricMachineLearning._flatten_system_parameters(parameters)))
-end
-
 @doc raw"""
     SymbolicEnergy
 
@@ -50,13 +43,19 @@ The learned energy of one half of a symplectic-Euler step: the shape of the ener
 state it differentiates and the parameters of the system, from which `Chain` builds the network and
 [`build_gradient`](@ref) the gradient that the step calls.
 
+`parameter_length` and `parameter_layout` are the shape of those parameters: the length of their flat
+vector, which is what the first layer of the network adds to its input, and the layout that puts such
+a vector back into the shape of `μ`. The names are `ParametricResNetLayer`'s, which carries the same
+pair for the same reasons.
+
 See [`SymbolicPotentialEnergy`](@ref) and [`SymbolicKineticEnergy`](@ref).
 """
-struct SymbolicEnergy{AT <: Activation, Kinetic}
+struct SymbolicEnergy{AT <: Activation, Kinetic, LT}
     dim::Int
     width::Int
     nhidden::Int
     parameter_length::Int
+    parameter_layout::LT
     activation::AT
 end
 
@@ -65,8 +64,10 @@ function SymbolicEnergy(::Val{Kinetic}, dim::Integer, width::Integer, nhidden::I
     _check_dimension(dim)
     _check_nhidden(nhidden)
     _activation = Activation(activation)
-    SymbolicEnergy{typeof(_activation), Kinetic}(
-        Int(dim), Int(width), Int(nhidden), _parameter_length(parameters), _activation)
+    flat_parameters, layout = GeometricMachineLearning._flatten_system_parameters(
+        parameters)
+    SymbolicEnergy{typeof(_activation), Kinetic, typeof(layout)}(
+        Int(dim), Int(width), Int(nhidden), length(flat_parameters), layout, _activation)
 end
 
 @doc raw"""
@@ -165,11 +166,21 @@ The gradient is the `gradient_function` that [`build_gradient`](@ref) generated 
 network, which the layer stores beside the network itself. A step is one call of it, and the
 parameters of the network are the parameters of `energy_model`: they nest one level deeper than the
 layer's own, as for every layer that holds a model.
+
+It also carries the shape of the parameters of the *system* — their flat length, and the layout that
+puts a flat vector of them back into the shape of `μ`. The layerwise `SymbolicPullback` of
+SymbolicNeuralNetworks carries those parameters flat across the seam between two layers, and this is
+what the layer reassembles them with; see `src/pullbacks/layerwise_seam.jl`. The layout is the last
+type parameter, so that the partial signatures of [`SymplecticEulerA`](@ref) and
+[`SymplecticEulerB`](@ref) go on matching with the layout left free.
 """
-struct SymplecticEuler{M, N, FT <: Base.Callable, MT <: Chain, type, ReturnParameters} <:
+struct SymplecticEuler{
+    M, N, FT <: Base.Callable, MT <: Chain, type, ReturnParameters, PT} <:
        AbstractExplicitLayer{M, N}
     gradient_function::FT
     energy_model::MT
+    parameter_length::Int
+    parameter_layout::PT
 end
 
 # The parameters of the layer are the parameters of the energy network it holds, and so is their
@@ -203,17 +214,17 @@ const SymplecticEulerB{M, N, FT, AT, ReturnParameters} = SymplecticEuler{
 function SymplecticEulerA(se::SymbolicKineticEnergy; return_parameters::Bool)
     gradient_function = build_gradient(se)
     energy_model = Chain(se)
-    SymplecticEuler{
-        se.dim, se.dim, typeof(gradient_function), typeof(energy_model), :A, return_parameters}(
-        gradient_function, energy_model)
+    SymplecticEuler{se.dim, se.dim, typeof(gradient_function), typeof(energy_model), :A,
+        return_parameters, typeof(se.parameter_layout)}(
+        gradient_function, energy_model, se.parameter_length, se.parameter_layout)
 end
 
 function SymplecticEulerB(se::SymbolicPotentialEnergy; return_parameters::Bool)
     gradient_function = build_gradient(se)
     energy_model = Chain(se)
-    SymplecticEuler{
-        se.dim, se.dim, typeof(gradient_function), typeof(energy_model), :B, return_parameters}(
-        gradient_function, energy_model)
+    SymplecticEuler{se.dim, se.dim, typeof(gradient_function), typeof(energy_model), :B,
+        return_parameters, typeof(se.parameter_layout)}(
+        gradient_function, energy_model, se.parameter_length, se.parameter_layout)
 end
 
 # The input of the energy network: the half of the state the step differentiates, with the

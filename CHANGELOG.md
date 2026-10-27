@@ -60,6 +60,24 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   system — and integrates a trajectory with the learned network; `HNN_SMOKE` runs it at a size that
   exercises the same code path in seconds.
 
+* **The layerwise `SymbolicPullback` of a generalized Hamiltonian network, with the parameters of
+  the system carried across the seam between two layers.** `SymbolicNeuralNetworks` composes the
+  pullback of a chain layer by layer, putting fresh symbolic variables between two layers instead of
+  inlining one layer's expression into the next, and `SymplecticEuler` declares what it carries at
+  that seam: the parameters of the system travel beside the state, flat, and the layer puts them back
+  into the shape it was built with. So
+  `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` builds for
+  any number of integrators, where one expression for the whole chain exceeds 10⁹ terms at two, and
+  its gradient is that of `Zygote` to machine precision. `ParametricLoss` declares its
+  `loss_expression` beside it, because a loss that is applied in a five-argument form is one the
+  construction cannot guess.
+  It covers a stacked state — a vector, or a `2d × k` matrix with one `μ` repeated under its columns —
+  one set of system parameters per call, and `GeneralizedHamiltonianArchitecture`. It does not cover
+  a `(q, p)` pair, which reaches upstream code that has no method for it (K21 in KNOWN_ISSUES.md), a
+  vector of `μ` with one set per sample, since a layer of the chain takes one per call, a forced
+  architecture, whose forcing layers it cannot seed, or `train!`, whose loss is applied in a
+  four-argument form (K20).
+
 ### Dependencies
 
 * **GeometricMachineLearning is a dependency.** The forced architecture is built from GML's

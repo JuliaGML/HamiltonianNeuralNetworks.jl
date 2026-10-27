@@ -10,6 +10,7 @@ if "core" in GROUPS
     @safetestset "Symplectic Euler loss" include("loss/training_method_losses.jl")
     @safetestset "SymbolicPullback of HNNLoss is the gradient of the batched loss" include("pullbacks/symbolic_hnn_pullback.jl")
     @safetestset "Symbolic pullback of a parametric generalized Hamiltonian network" include("pullbacks/symbolic_pghnn_pullback.jl")
+    @safetestset "Layerwise symbolic pullback of a generalized Hamiltonian network" include("pullbacks/layerwise_seam.jl")
     @safetestset "A loss takes a NetworkParameters" include("loss/losses.jl")
     @safetestset "train! with a Hamiltonian network" include("integration/train_with_symbolic_pullback.jl")
 end

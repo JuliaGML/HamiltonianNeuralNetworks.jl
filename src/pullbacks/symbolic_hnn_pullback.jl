@@ -71,19 +71,29 @@ The pullback traces the whole chain, and a [`SymplecticEuler`](@ref) step inline
 gradient of its energy network — an expression that is itself already a derivative. Stacking
 integrators inlines that expression inside the next step's, so one expression for the chain holds a
 copy of it per integrator, each inside the next, and grows multiplicatively with the number of
-integrators. `ZygotePullback(ParametricLoss())` differentiates through the chain rather than
-generating an expression for it, and has no such limit.
+integrators.
+
+The way out is not to trace the inlined chain but to compose the pullback layer by layer:
+`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` puts fresh
+symbolic variables between two layers instead, and so has no such limit, for any number of
+integrators. The parameters of the system cross between the layers as the seam's carried datum, which
+[`SymplecticEuler`](@ref) declares; one set of them per call is what it takes, so its gradient is the
+layer-by-layer gradient of one sample per `μ`.
+`ZygotePullback(ParametricLoss())` differentiates through the chain rather than generating an
+expression for it, and has no such limit either; it is what `train!` takes by default.
 """
 function _check_symbolic_pullback_is_tractable(
         arch::Union{
         GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture})
     n = arch.n_integrators
     n > 1 && throw(ArgumentError(
-        "cannot build a `SymbolicPullback` for an architecture with `n_integrators` = $(n): each " *
-        "step inlines the generated gradient of its energy network, so the expression of a chain " *
-        "holds one copy of it per integrator, each inside the next. Use " *
-        "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, or a network " *
-        "with one integrator."))
+        "cannot build *this* `SymbolicPullback` for an architecture with `n_integrators` = $(n): " *
+        "it builds one expression for the whole network, which grows multiplicatively with the " *
+        "number of integrators and already exceeds 10⁹ terms at two, so the build does not " *
+        "finish. `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), " *
+        "ParametricLoss())` composes the pullback layer by layer instead, one sample per `μ`, and " *
+        "has no such limit; `ZygotePullback(ParametricLoss())`, which is what `train!` takes by " *
+        "default, is the other option."))
     nothing
 end
 

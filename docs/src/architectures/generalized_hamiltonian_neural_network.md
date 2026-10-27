@@ -56,8 +56,17 @@ than a scalar Hamiltonian, so its pullback is
 which generates the gradient of the parametric loss in closed form. It is one expression for the
 whole chain, so a chain of more than one integrator is refused: each step inlines the generated
 gradient of its energy network, and such an expression then holds one copy of it per integrator,
-each inside the next. `train!` takes a `ZygotePullback` of the same loss by default, which has no
-such limit.
+each inside the next.
+
+`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` composes
+the pullback layer by layer instead — fresh symbolic variables between two layers rather than one
+layer's expression inside the next — and has no such limit. A [`SymplecticEuler`](@ref) step declares
+what it carries at that seam: the parameters of the system travel beside the state and are put back
+into their own shape there, so the gradient is the layer-by-layer gradient of one sample per `μ`.
+That construction is the one to reach for on a chain of more than one integrator, and on a network
+built with `parameters`, which the monolithic construction cannot build at all. It takes a stacked
+state: a vector, or a `2d × k` matrix with one `μ` repeated under its columns. `train!` takes a
+`ZygotePullback` of the same loss by default, which has no such limit either.
 
 ## Library Functions
 
