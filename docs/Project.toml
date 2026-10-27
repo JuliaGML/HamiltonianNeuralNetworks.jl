@@ -7,7 +7,7 @@ GeometricMachineLearning = "194d25b2-d3f5-49f0-af24-c124f4aa80cc"
 HamiltonianNeuralNetworks = "854b1a03-e837-4b0e-807d-c0747ccaff92"
 
 [sources]
-GeometricMachineLearning = {url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "main"}
+GeometricMachineLearning = {url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "2604f1158ebc1c9c8d26e4bda7d0bdfdecc35860"}
 HamiltonianNeuralNetworks = {path = ".."}
 
 [compat]

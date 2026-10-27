@@ -87,7 +87,20 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `_flatten_system_parameters`, `concatenate_array_with_parameters` and `_check_forcing_type` at no
   file under `v0.8.0:src/`, and `assign_q_and_p` is the one it has. A
   resolve that chose that release therefore raises an `UndefVarError` on load. It cannot be seen
-  here, because `GeometricMachineLearning`'s own `main` declares `version = "0.8.0"`, which the
-  bound admits, while `[sources]` takes GML from that branch. The bound becomes `"0.9"` in the
-  change that removes `[sources]` from this file: the parametric API is GML 0.9's, and a release
-  against 0.8.0 has no such names to import.
+  here, because `[sources]` takes GML from commit `2604f115` of its `main` branch, which declares
+  `version = "0.8.0"` and so satisfies the bound; a bound of `"0.9"` fails to resolve against it.
+  The bound therefore stays `"0.8"` until GML declares 0.9. It becomes `"0.9"` in the change that
+  removes `[sources]` from this file, once GML 0.9 is registered: the parametric API is GML 0.9's,
+  and a release against 0.8.0 has no such names to import.
+
+### K19 · The Downgrade job fails to build while `Project.toml` takes GeometricMachineLearning from a URL source.
+
+- **location:** `Project.toml:17`
+- **kind:** defect
+- **found:** #3
+- **evidence:**
+  `julia-downgrade-compat` logs `Found source package: GeometricMachineLearning (url=…)` and leaves
+  GML out of the dependencies it pins, and `julia-buildpkg` then stops with
+  `LoadError: could not find manifest entry for package with uuid 194d25b2-d3f5-49f0-af24-c124f4aa80cc`,
+  which is GML's. The job builds nothing, so it tests no lower bound. It is advisory
+  (`.github/workflows/CI.yml:25-27`), and it stays red until the change of K17 removes `[sources]`.
