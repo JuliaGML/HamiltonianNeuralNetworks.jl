@@ -51,14 +51,13 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
 - **kind:** found late
 - **found:** 2026-10-28, in the review of the layerwise seam, round 1
 - **evidence:**
-  `run-tests.jl` names every `core` file that takes more than 60 s, and this one is named in every
-  run on this machine: `D6: test/pullbacks/symbolic_pghnn_pullback.jl runs 62.3 s cold, above the
-  60 s of a core file` in the review's `core` run, 64.0 s cold in the build's, and 64.4 s of testset
-  time in a `Pkg.test()` at a load average of 39.7. The file builds a `SymplecticEuler` and the
+  `run-tests.jl` reports a `core` file whose cold time is above 60 s, and both `core` runs of the
+  review report this one: `D6: test/pullbacks/symbolic_pghnn_pullback.jl runs 62.3 s cold, above the
+  60 s of a core file` in the critic's, 64.0 s in the build's. A `Pkg.test()` at a load average of
+  39.7 spends 64.4 s of testset time on the file. The file builds a `SymplecticEuler` and the
   architecture around it, the type that the layerwise seam gives two fields and a type parameter to,
   and the base was not timed there, so no measurement separates that change from the rest of the
-  time. Moving the file to the `slow` group is what closes it; the group of a test file is a decision
-  of the plan that adds it.
+  time. Moving the file to the `slow` group is what closes it.
 
 ## Upstream
 
