@@ -89,7 +89,7 @@ end
         ParametricDataLoader(data, parameters), Batch(2), n_epochs; show_progress = false)
     @test length(history) == n_epochs
     # The history of this form is in `Float64`, whatever the data's type: the loss norm of a
-    # `(q, p)` pair divides by `√length`, which is a `Float64` (KNOWN_ISSUES K28). The forward pass
+    # `(q, p)` pair divides by `√length`, which is a `Float64` (KNOWN_ISSUES K16). The forward pass
     # on this form keeps the data's element type.
     @test eltype(nn((q = data.q[:, 1:1, :], p = data.p[:, 1:1, :]), parameters).q) === T
     @test all(isfinite, history)

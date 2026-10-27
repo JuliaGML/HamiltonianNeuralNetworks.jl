@@ -47,11 +47,11 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
 
 ## Upstream
 
-### K28 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
+### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
 
 - **location:** `test/integration/train_pghnn.jl:82`
 - **kind:** upstream
-- **found:** 2026-10-27, in GeometricMachineLearning, whose `KNOWN_ISSUES.md` holds it under the same ID
+- **found:** 2026-10-27, in GeometricMachineLearning, whose `KNOWN_ISSUES.md` holds it under `K28`
 - **evidence:**
   AbstractNeuralNetworks' `_norm` of a `(q, p)` named tuple divides by `√length(dx)`, which is a
   `Float64`, so `ParametricLoss` returns a `Float64` on `Float32` `(q, p)` data and the history of a
