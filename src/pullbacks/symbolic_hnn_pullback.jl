@@ -231,18 +231,20 @@ end
 
 # `_ParametricBatch` admits arrays of any dimension and size in either form, and the pullback takes a
 # batch only as 3-dimensional arrays of one column per sample, so a batch of any other array is
-# refused by name.
-const _TensorPair = NamedTuple{
-    (:q, :p), <:Tuple{AbstractArray{<:Any, 3}, AbstractArray{<:Any, 3}}}
+# refused by name, with the size of each array.
 _is_batch_tensor(x::AbstractArray{<:Any, 3}) = size(x, 2) == 1
-_is_batch_tensor(x::_TensorPair) = _is_batch_tensor(x.q) && _is_batch_tensor(x.p)
+_is_batch_tensor(x::NamedTupleOfArrays{<:Any, (:q, :p)}) = all(_is_batch_tensor, x)
 _is_batch_tensor(_) = false
+_batch_summary(x) = summary(x)
+function _batch_summary(x::NamedTupleOfArrays{<:Any, (:q, :p)})
+    "(q = $(summary(x.q)), p = $(summary(x.p)))"
+end
 function _check_batch_form(input, output)
     _is_batch_tensor(input) && _is_batch_tensor(output) && return nothing
     throw(ArgumentError(
         "the batch of `SymbolicPullback(arch, ParametricLoss())` is an input and an output of " *
         "2d × 1 × k with k values of μ, or a (q, p) pair of d × 1 × k; it got an input " *
-        "$(summary(input)) and an output $(summary(output))."))
+        "$(_batch_summary(input)) and an output $(_batch_summary(output))."))
 end
 
 # The cotangent of the loss at the output: the residual of each half, scaled by that half's inverse

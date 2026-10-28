@@ -314,8 +314,9 @@ end
         end
         @test occursin("2d × 1 × k", message)
         @test occursin("(q, p) pair of d × 1 × k", message)
-        @test occursin(summary(x), message)
-        @test occursin(summary(y), message)
+        for array in Iterators.flatten(z isa NamedTuple ? values(z) : (z,) for z in (x, y))
+            @test occursin(summary(array), message)
+        end
     end
 end
 
