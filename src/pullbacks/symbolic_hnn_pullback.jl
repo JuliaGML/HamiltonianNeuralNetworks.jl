@@ -107,7 +107,7 @@ end
 function _alternative_pullbacks(::GeneralizedHamiltonianArchitecture)
     "`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` " *
     "composes the pullback layer by layer instead, with one `μ` per call, and has no such limit; " *
-    "it gives the gradient, but not yet a pullback `train!` takes, because the call it makes on " *
+    "it gives the gradient, but is not yet a pullback `train!` takes, because the call it makes on " *
     "the loss passes four arguments where `ParametricLoss` takes five (K20 in KNOWN_ISSUES.md). " *
     "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, is what trains " *
     "such a network."

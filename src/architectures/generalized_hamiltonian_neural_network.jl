@@ -186,10 +186,9 @@ puts a flat vector of them back into the shape of `μ`. The layerwise `SymbolicP
 SymbolicNeuralNetworks carries those parameters flat across the seam between two layers, and this is
 what the layer reassembles them with. The layout is the last type parameter, so that the partial
 signatures of [`SymplecticEulerA`](@ref) and [`SymplecticEulerB`](@ref) go on matching with the
-layout left free. The layout's type also says
-whether the layer carries anything across that seam: a system without parameters has the empty
-layout, so the number of arguments the seam hands the generated kernels is fixed by the layer's
-type.
+layout left free. The layout's type also says whether the layer carries anything across that seam:
+a system without parameters has the empty layout, so the number of arguments the seam hands the
+generated kernels is fixed by the layer's type.
 """
 struct SymplecticEuler{
     M, N, FT <: Base.Callable, MT <: Chain, type, ReturnParameters, PT} <:
