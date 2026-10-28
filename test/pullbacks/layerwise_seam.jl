@@ -85,12 +85,15 @@ end
     end
 end
 
-# A stacked batch is a `2d × 1 × k` tensor. A matrix of samples passes the call signature, and the
-# pullback refuses it by naming the forms it takes and the form it got.
+# A stacked batch is a `2d × 1 × k` tensor, and a `(q, p)` batch a pair of `d × 1 × k` ones. A matrix
+# of samples passes the call signature in either form, and the pullback refuses it by naming the
+# forms it takes and the form it got.
 @testset "a matrix batch is an ArgumentError" begin
     nn = NeuralNetwork(architecture(2), Float64)
     tensor, matrix = rand(4, 1, 3), rand(4, 3)
-    for (x, y) in ((matrix, matrix), (tensor, matrix), (matrix, tensor))
+    matrix_pair = (q = rand(2, 3), p = rand(2, 3))
+    for (x, y) in ((matrix, matrix), (tensor, matrix), (matrix, tensor),
+        (matrix_pair, matrix_pair))
         batch = (x, y, SAMPLE_PARAMETERS)
         @test_throws ArgumentError TWO_INTEGRATORS(params(nn), nn.model, batch)
         message = try

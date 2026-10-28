@@ -229,10 +229,12 @@ function _value_and_scales(model, ps, input::NamedTupleOfArrays{<:Any, (:q, :p)}
     (norm_R_q + norm_R_p) / norm_Y, pinv(norm_R_q), pinv(norm_R_p), norm_Y
 end
 
-# The stacked arm of `_ParametricBatch` admits an array of any dimension, and `apply_parametric`
-# takes a stacked batch only as a `2d × 1 × k` tensor, so any other array is refused by name.
+# `_ParametricBatch` admits arrays of any dimension in either form, and `apply_parametric` takes a
+# batch only as 3-dimensional arrays, so a batch of any other array is refused by name.
+const _TensorPair = NamedTuple{
+    (:q, :p), <:Tuple{AbstractArray{<:Any, 3}, AbstractArray{<:Any, 3}}}
 _check_batch_form(::AbstractArray{<:Any, 3}, ::AbstractArray{<:Any, 3}) = nothing
-_check_batch_form(::NamedTupleOfArrays, ::NamedTupleOfArrays) = nothing
+_check_batch_form(::_TensorPair, ::_TensorPair) = nothing
 function _check_batch_form(input, output)
     throw(ArgumentError(
         "the batch of `SymbolicPullback(arch, ParametricLoss())` is an input and an output of " *
