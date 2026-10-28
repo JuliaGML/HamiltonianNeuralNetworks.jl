@@ -104,3 +104,19 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `LoadError: could not find manifest entry for package with uuid 194d25b2-d3f5-49f0-af24-c124f4aa80cc`,
   which is GML's. The job builds nothing, so it tests no lower bound. It is advisory
   (`.github/workflows/CI.yml:25-27`), and it stays red until the change of K17 removes `[sources]`.
+
+### K20 · `SymbolicPullback(arch, ParametricLoss())` raises a `MethodError` on a batch with one stacked array and one `(q, p)` pair.
+
+- **location:** `src/pullbacks/symbolic_hnn_pullback.jl:199`
+- **kind:** defect
+- **found:** #5, review of the check of the batch form
+- **evidence:**
+  `_ParametricBatch` is a union of two tuple types: an array input with an array output, and a
+  `(q, p)` pair input with a `(q, p)` pair output. Neither admits a stacked input with a pair output
+  or the reverse, so a call with such a batch matches no method and raises a `MethodError`, not the
+  `ArgumentError` that `_check_batch_form` gives a batch of either form whose arrays are not
+  3-dimensional with a middle size of 1. The review of #5 ran the call on that pull request's head,
+  whose `_ParametricBatch` and call signatures are those of `main`: the forced pullback on a stacked
+  input with a pair output and on the reverse, and the layerwise pullback on a stacked input with a
+  pair output, each raise `MethodError: no method matching (::SymbolicPullback{ParametricLoss, …})`.
+  A `ParametricDataLoader` gives one form for both arrays, so only a hand-built batch reaches it.
