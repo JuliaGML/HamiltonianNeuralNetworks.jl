@@ -20,8 +20,8 @@ Random.seed!(1234)
 
 const SYSTEM_PARAMETERS = (m = 1.0, ω = 2.0)
 
-# A single integrator: the smallest parametric network whose symbolic expression still finishes
-# building.
+# A single integrator, the smallest parametric network. A chain of more of them is tested in
+# `layerwise_seam.jl`.
 function single_integrator(parameters = SYSTEM_PARAMETERS)
     GeneralizedHamiltonianArchitecture(2;
         width = 2, nhidden = 1, n_integrators = 1, parameters)
@@ -227,42 +227,24 @@ end
     end
 end
 
-# A chain of two integrators inlines the generated gradient of each energy network inside the next
-# one, so one expression for the chain holds a copy of each of them per integrator, each inside the
-# next. The pullback refuses such a chain rather than building it, and the message names the
-# parameter and the pullback to use instead.
-@testset "the pullback refuses a stacked architecture" begin
-    stacked = GeneralizedHamiltonianArchitecture(2; n_integrators = 2,
-        parameters = SYSTEM_PARAMETERS)
-    @test_throws ArgumentError SymbolicPullback(stacked, ParametricLoss())
-    message = try
-        SymbolicPullback(stacked, ParametricLoss())
-        ""
-    catch e
-        sprint(showerror, e)
-    end
-    @test occursin("n_integrators", message)
-    @test occursin("ZygotePullback", message)
-
-    # the forced architecture is counted by its own integrators, and refused with the same message
+# The pullback of a forced chain is one expression, which inlines the generated gradient of each
+# energy network inside the next one, so it holds a copy of each of them per integrator. It refuses a
+# forced chain of two integrators rather than building it, and the message names the parameter and
+# the pullback to use instead. A generalized chain is composed layer by layer and builds.
+@testset "the pullback refuses a stacked forced architecture" begin
     forced = ForcedGeneralizedHamiltonianArchitecture(2; n_integrators = 2,
         parameters = SYSTEM_PARAMETERS)
     @test_throws ArgumentError SymbolicPullback(forced, ParametricLoss())
-    forced_message = try
-        SymbolicPullback(forced, ParametricLoss())
-        ""
-    catch e
-        sprint(showerror, e)
-    end
-    @test occursin("n_integrators", forced_message)
-    @test occursin("ZygotePullback", forced_message)
+    @test_throws r"`n_integrators` = 2: .* Use `ZygotePullback\(ParametricLoss\(\)\)`" SymbolicPullback(
+        forced, ParametricLoss())
 
-    # one integrator is the supported case, and it builds
-    @test SymbolicPullback(single_integrator(), ParametricLoss()) isa SymbolicPullback
     @test SymbolicPullback(
         ForcedGeneralizedHamiltonianArchitecture(2;
             parameters = SYSTEM_PARAMETERS),
         ParametricLoss()) isa SymbolicPullback
+    stacked = GeneralizedHamiltonianArchitecture(2; n_integrators = 2,
+        parameters = SYSTEM_PARAMETERS)
+    @test SymbolicPullback(stacked, ParametricLoss()) isa SymbolicPullback
 end
 
 # A forced architecture's pullback is the pullback of `ParametricLoss` as a plain one's is: its value

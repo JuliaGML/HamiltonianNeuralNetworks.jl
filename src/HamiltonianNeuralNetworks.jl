@@ -36,5 +36,6 @@ include("architectures/forced_generalized_hamiltonian_neural_network.jl")
 include("loss/hnn_loss.jl")
 include("loss/symplectic_euler_loss.jl")
 include("pullbacks/symbolic_hnn_pullback.jl")
+include("pullbacks/layerwise_seam.jl")
 
 end

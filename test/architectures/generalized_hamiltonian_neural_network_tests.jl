@@ -213,6 +213,26 @@ end
     @test occursin("has 3", message)
 end
 
+# A matrix of samples takes one `μ` per column, which is how the layerwise pullback hands a batch to
+# a step: column `i` of the result is the step of column `i` with `μs[i]`.
+@testset "a step takes one μ per column of a matrix ($T)" for T in REAL_ELTYPES
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0), (m = 3.0, ω = 1.0)]
+    states = rand(T, 4, 3)
+    for (Layer, energy) in ((SymplecticEulerA, SymbolicKineticEnergy),
+        (SymplecticEulerB, SymbolicPotentialEnergy))
+        layer = Layer(energy(4, 3, 1, tanh; parameters = first(μs)); return_parameters = true)
+        ps = params(NeuralNetwork(Chain(layer), T)).L1
+        output, passed_on = @inferred layer((states, μs), ps)
+        columns = reduce(hcat, [first(layer(states[:, i], μs[i], ps)) for i in 1:3])
+        @test eltype(output) === T
+        @test output ≈ columns rtol = 8 * eps(T)
+        @test passed_on === μs
+        # the three values of `μ` are distinct, so a step that used one of them for every column
+        # would give another result
+        @test !(output ≈ first(layer(states, first(μs), ps)))
+    end
+end
+
 # The two steps of one integrator, against the gradient of their own energies, which the test takes
 # with `Zygote` rather than from the generated function the layer holds.
 @testset "a symplectic-Euler step is the gradient of its energy ($T)" for T in REAL_ELTYPES

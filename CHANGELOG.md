@@ -45,20 +45,46 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   `SymbolicEnergy` with its kinetic and potential constructors, `SymplecticEuler` with its `A` and
   `B` steps and `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
 * **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
-  generalized or forced network, generated in closed form: the per-sample gradients of the surrogate
-  `½‖rᵢ‖²`, summed over the batch and scaled by the residual and target norms that loss gives that
-  batch form, in both precisions. Its value and gradient are those of `ParametricLoss` on the batch,
-  which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as a `(q, p)` pair of `d × 1 × k`
-  ones; the loss weighs the two halves of a pair by their own norms, and the pullback does the same.
-  A chain of more than one integrator is refused with an `ArgumentError`, because each step of the
-  chain inlines the generated gradient of its energy network and one expression for the whole chain
-  grows with every integrator; `train!` takes the `ZygotePullback` of the same loss.
+  generalized or forced network, in both precisions. Its value and gradient are those of
+  `ParametricLoss` on the batch, which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or
+  as a `(q, p)` pair of `d × 1 × k` ones; the loss weighs the two halves of a pair by their own
+  norms, and the pullback does the same. For a forced network the gradient is generated in closed
+  form: the per-sample gradients of the surrogate `½‖rᵢ‖²`, summed over the batch and scaled by
+  the residual and target norms that loss gives that batch form. For a generalized network it is
+  composed layer by layer, as the bullet below describes. For a forced network, a chain of more
+  than one integrator is refused with an `ArgumentError`, because each step of the chain inlines
+  the generated gradient of its energy network and one expression for the whole chain grows with
+  every integrator; `train!` takes the `ZygotePullback` of the same loss.
   `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and refuses a
   generalized architecture, which is a map rather than a scalar Hamiltonian.
 * **The forced generalized Hamiltonian network's reproduction script.** It trains the three forcing
   types of the sinusoidally forced harmonic oscillator — where the time is the parameter of the
   system — and integrates a trajectory with the learned network; `HNN_SMOKE` runs it at a size that
   exercises the same code path in seconds.
+
+* **The layerwise `SymbolicPullback` of a generalized Hamiltonian network carries the parameters of
+  the system across the seam between layers.** For a `GeneralizedHamiltonianArchitecture`,
+  `SymbolicPullback(arch, ParametricLoss())` is composed layer by layer by the layerwise sweep of
+  `SymbolicNeuralNetworks`, for any number of integrators; one, two and three were checked. Each
+  `SymplecticEuler` step declares what it carries at the seam between two layers, through the seam
+  interface of `SymbolicNeuralNetworks` (`carried_variables`, `seam_value`, `state_expressions` and
+  `seam_arguments`): the parameters of the system travel beside the state, flat, one column per
+  sample, and the layer puts them back into the shape it was built with. At a call, the sweep is
+  seeded with the cotangent of `ParametricLoss` at the network output, each half's residual scaled
+  by the norms the loss divides by, so the gradient of a batch with a distinct `μ` per sample comes
+  out of one backward pass. Its value and gradient agree with `ZygotePullback(ParametricLoss())` on
+  both batch forms to below `1e-14` absolute in `Float64` for two integrators; the largest
+  difference measured is `6.7e-16`. The gradient keeps the element type of the parameters.
+  `train!` takes it as its `loss`: under one seed, `train!` with this pullback on a
+  `ParametricDataLoader` gives the same history and parameters as `train!` with
+  `ZygotePullback(ParametricLoss())`, to rounding. A `SymplecticEuler` step takes a vector of `μ`,
+  one under each column of a `2d × k` matrix of samples, beside a single `μ`.
+  `ForcedGeneralizedHamiltonianArchitecture` keeps the pullback built from one expression for
+  the whole chain and its refusal of `n_integrators > 1`: `ForcingLayer` of GeometricMachineLearning
+  declares no seam, so the sweep cannot compose that chain. `ZygotePullback(ParametricLoss())`, the
+  default of `train!`, trains it. No method of a function the package does not own is defined on a
+  type it does not own, and the Aqua check runs without an exemption. It relates to
+  JuliaGNI/GeometricMachineLearning.jl#245 and JuliaGNI/GeometricMachineLearning.jl#251.
 
 ### Dependencies
 
