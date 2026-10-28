@@ -229,13 +229,16 @@ function _value_and_scales(model, ps, input::NamedTupleOfArrays{<:Any, (:q, :p)}
     (norm_R_q + norm_R_p) / norm_Y, pinv(norm_R_q), pinv(norm_R_p), norm_Y
 end
 
-# `_ParametricBatch` admits arrays of any dimension in either form, and `apply_parametric` takes a
-# batch only as 3-dimensional arrays, so a batch of any other array is refused by name.
+# `_ParametricBatch` admits arrays of any dimension and size in either form, and the pullback takes a
+# batch only as 3-dimensional arrays of one column per sample, so a batch of any other array is
+# refused by name.
 const _TensorPair = NamedTuple{
     (:q, :p), <:Tuple{AbstractArray{<:Any, 3}, AbstractArray{<:Any, 3}}}
-_check_batch_form(::AbstractArray{<:Any, 3}, ::AbstractArray{<:Any, 3}) = nothing
-_check_batch_form(::_TensorPair, ::_TensorPair) = nothing
+_is_batch_tensor(x::AbstractArray{<:Any, 3}) = size(x, 2) == 1
+_is_batch_tensor(x::_TensorPair) = _is_batch_tensor(x.q) && _is_batch_tensor(x.p)
+_is_batch_tensor(_) = false
 function _check_batch_form(input, output)
+    _is_batch_tensor(input) && _is_batch_tensor(output) && return nothing
     throw(ArgumentError(
         "the batch of `SymbolicPullback(arch, ParametricLoss())` is an input and an output of " *
         "2d × 1 × k with k values of μ, or a (q, p) pair of d × 1 × k; it got an input " *
@@ -270,6 +273,7 @@ end
 
 function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
         ps::NetworkParameters, model, (input, output, μs)::_ParametricBatch)
+    _check_batch_form(input, output)
     value, inv_R_q, inv_R_p, norm_Y = _value_and_scales(model, ps, input, output, μs)
     TP = parameter_eltype(ps)
     gradient_function = pb.fun.gradient_function

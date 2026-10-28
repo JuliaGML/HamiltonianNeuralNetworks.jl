@@ -86,14 +86,17 @@ end
 end
 
 # A stacked batch is a `2d × 1 × k` tensor, and a `(q, p)` batch a pair of `d × 1 × k` ones. A matrix
-# of samples passes the call signature in either form, and the pullback refuses it by naming the
-# forms it takes and the form it got.
-@testset "a matrix batch is an ArgumentError" begin
+# of samples, or a tensor whose middle size is not one, passes the call signature in either form, and
+# the pullback refuses it by naming the forms it takes and the form it got.
+@testset "a matrix batch or a middle size other than one is an ArgumentError" begin
     nn = NeuralNetwork(architecture(2), Float64)
-    tensor, matrix = rand(4, 1, 3), rand(4, 3)
+    tensor, matrix, wide = rand(4, 1, 3), rand(4, 3), rand(4, 2, 3)
     matrix_pair = (q = rand(2, 3), p = rand(2, 3))
+    wide_pair = (q = rand(2, 2, 3), p = rand(2, 2, 3))
+    half_wide_pair = (q = rand(2, 1, 3), p = rand(2, 2, 3))
     for (x, y) in ((matrix, matrix), (tensor, matrix), (matrix, tensor),
-        (matrix_pair, matrix_pair))
+        (matrix_pair, matrix_pair), (wide, wide), (tensor, wide), (wide_pair, wide_pair),
+        (half_wide_pair, half_wide_pair))
         batch = (x, y, SAMPLE_PARAMETERS)
         @test_throws ArgumentError TWO_INTEGRATORS(params(nn), nn.model, batch)
         message = try
@@ -102,7 +105,7 @@ end
             sprint(showerror, error)
         end
         @test occursin("2d × 1 × k", message)
-        @test occursin("(q, p)", message)
+        @test occursin("(q, p) pair of d × 1 × k", message)
         @test occursin(summary(x), message)
         @test occursin(summary(y), message)
     end
