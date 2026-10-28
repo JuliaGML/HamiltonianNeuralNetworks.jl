@@ -46,15 +46,18 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   `B` steps and `build_gradient` stay internal. Ported from GeometricMachineLearning.jl#207.
 * **`SymbolicPullback(arch, ParametricLoss())`.** The gradient of the parametric loss for a
   generalized or forced network, in both precisions. Its value and gradient are those of
-  `ParametricLoss` on the batch, which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or
-  as a `(q, p)` pair of `d × 1 × k` ones; the loss weighs the two halves of a pair by their own
-  norms, and the pullback does the same. For a forced network the gradient is generated in closed
-  form: the per-sample gradients of the surrogate `½‖rᵢ‖²`, summed over the batch and scaled by
-  the residual and target norms that loss gives that batch form. For a generalized network it is
-  composed layer by layer, as the bullet below describes. For a forced network, a chain of more
-  than one integrator is refused with an `ArgumentError`, because each step of the chain inlines
-  the generated gradient of its energy network and one expression for the whole chain grows with
-  every integrator; `train!` takes the `ZygotePullback` of the same loss.
+  `ParametricLoss` on the batch, which a `ParametricDataLoader` draws as a `2d × 1 × k` tensor or as
+  a `(q, p)` pair of `d × 1 × k` ones; the loss weighs the two halves of a pair by their own norms,
+  and the pullback does the same. A batch of any other form is refused with an `ArgumentError`: a
+  matrix, or a 3-dimensional array whose middle size is not 1, in either array or either half of a
+  pair. The message names the two forms and gives the size of each array it got, the size of `q` and
+  of `p` for a pair. For a forced network the gradient is generated in closed form: the per-sample
+  gradients of the surrogate `½‖rᵢ‖²`, summed over the batch and scaled by the residual and target
+  norms that loss gives that batch form. For a generalized network it is composed layer by layer, as
+  the bullet below describes. For a forced network, a chain of more than one integrator is refused
+  with an `ArgumentError`, because each step of the chain inlines the generated gradient of its
+  energy network and one expression for the whole chain grows with every integrator; `train!` takes
+  the `ZygotePullback` of the same loss.
   `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and refuses a
   generalized architecture, which is a map rather than a scalar Hamiltonian.
 * **The forced generalized Hamiltonian network's reproduction script.** It trains the three forcing
