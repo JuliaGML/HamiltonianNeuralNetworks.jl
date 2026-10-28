@@ -6,10 +6,10 @@
 # vector — the state — so the construction assumes every layer maps an array to an array.
 #
 # A `SymplecticEuler` built with `return_parameters = true` does not: it threads the parameters of the
-# *system* on to the next layer, so it takes and returns the pair `(state, μ)`. The four methods below
-# say how it meets the seam, in the interface `SymbolicNeuralNetworks.seam_interface` describes; a
-# layer that declares none of them is declined, and the monolithic construction takes over, which for
-# a system with parameters does not build at all.
+# *system* on to the next layer, so it takes and returns the pair `(state, μ)`. The four functions
+# below say how it meets the seam, in the interface `SymbolicNeuralNetworks.seam_interface`
+# describes; a layer that declares none of them is declined, and the monolithic construction takes
+# over, which for a system with parameters does not build at all.
 
 # Whether the layer carries the parameters of the system across the seam is a property of its type,
 # because the sweep splats what `seam_arguments` returns into the generated kernels and that call

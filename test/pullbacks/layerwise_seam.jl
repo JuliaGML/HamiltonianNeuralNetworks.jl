@@ -31,8 +31,8 @@ Random.seed!(1234)
 
 const SYSTEM_PARAMETERS = (m = 1.0, ω = π / 2)
 
-# The largest entry of the flat difference is compared against `1e-14 * eps(T) / eps(Float64)`: a
-# relative `1e-14` in `Float64`, and the same multiple of `eps` in any other precision.
+# The largest entry of the flat difference is compared against `1e-14 * eps(T) / eps(Float64)`: an
+# absolute `1e-14` in `Float64`, and the same multiple of `eps` in any other precision.
 tolerance(::Type{T}) where {T} = 1e-14 * eps(T) / eps(Float64)
 
 # The pullback is a function of the *output sensitivity*, which the layerwise construction ignores

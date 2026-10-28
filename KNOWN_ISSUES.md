@@ -97,8 +97,8 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `GeneralizedHamiltonianArchitecture(4; width = 2, nhidden = 1, parameters = (m = 1.0, ω = π/2))`
   it returns a `Vector{Float64}` of the parameters' shape, and `test/pullbacks/layerwise_seam.jl`
   checks it against `Zygote`. The pullback as a whole does not: its two functors evaluate the value
-  as `pullback.loss(model, ps, input, output)`, which is `ParametricLoss`' four-argument form, and
-  `ParametricLoss` has five arguments. Calling it raises, with the parameter types elided:
+  as `pullback.loss(model, ps, input, output)` — four arguments — and `ParametricLoss` takes five,
+  with the system parameters last. Calling it raises, with the parameter types elided:
 
   ```
   MethodError: no method matching (::ParametricLoss)(::Chain{…}, ::NetworkParameters{…},
