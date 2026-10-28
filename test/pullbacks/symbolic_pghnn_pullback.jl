@@ -290,6 +290,36 @@ end
     end
 end
 
+# The forced pullback takes the batch forms the layerwise one takes: a matrix of samples, or a tensor
+# whose middle size is not one, is refused by naming the forms it takes and the form it got.
+@testset "the forced pullback refuses a matrix batch or a middle size other than one" begin
+    architecture = ForcedGeneralizedHamiltonianArchitecture(2;
+        width = 2, nhidden = 1, parameters = SYSTEM_PARAMETERS)
+    nn = NeuralNetwork(architecture, Float64)
+    pullback = SymbolicPullback(architecture, ParametricLoss())
+    μs = [(m = 1.0, ω = 2.0), (m = 2.0, ω = 3.0), (m = 3.0, ω = 1.0)]
+    tensor, matrix, wide = rand(2, 1, 3), rand(2, 3), rand(2, 2, 3)
+    matrix_pair = (q = rand(1, 3), p = rand(1, 3))
+    wide_pair = (q = rand(1, 2, 3), p = rand(1, 2, 3))
+    half_wide_pair = (q = rand(1, 1, 3), p = rand(1, 2, 3))
+    for (x, y) in ((matrix, matrix), (tensor, matrix), (matrix, tensor),
+        (matrix_pair, matrix_pair), (wide, wide), (tensor, wide), (wide_pair, wide_pair),
+        (half_wide_pair, half_wide_pair))
+        batch = (x, y, μs)
+        @test_throws ArgumentError pullback(params(nn), nn.model, batch)
+        message = try
+            pullback(params(nn), nn.model, batch)
+        catch error
+            sprint(showerror, error)
+        end
+        @test occursin("2d × 1 × k", message)
+        @test occursin("(q, p) pair of d × 1 × k", message)
+        for array in Iterators.flatten(z isa NamedTuple ? values(z) : (z,) for z in (x, y))
+            @test occursin(summary(array), message)
+        end
+    end
+end
+
 # A generalized Hamiltonian network is a map rather than a scalar Hamiltonian, so the pullback of
 # `HNNLoss` refuses it and names the parametric form.
 @testset "a generalized architecture has no `HNNLoss` pullback" begin
