@@ -240,9 +240,9 @@ function (pb::SymbolicPullback{<:ParametricLoss, <:_LayerwiseParameterGradient})
     TP = parameter_eltype(ps)
     value,
     function (Δ)
-        seed = (ŷ, y, _) -> vcat(
-            (ŷ[1:half, :] - y[1:half, :]) .* Δ .* inv_R_q ./ norm_Y,
-            (ŷ[(half + 1):end, :] - y[(half + 1):end, :]) .* Δ .* inv_R_p ./ norm_Y)
+        seed = (ŷ, y, _) -> @views vcat(
+            (ŷ[1:half, :] .- y[1:half, :]) .* Δ .* inv_R_q ./ norm_Y,
+            (ŷ[(half + 1):end, :] .- y[(half + 1):end, :]) .* Δ .* inv_R_p ./ norm_Y)
         gradient = _reseeded(pb.fun.gradient_function, seed)((state, μs), target, ps)
         mapstorage(g -> TP.(g), gradient)
     end
