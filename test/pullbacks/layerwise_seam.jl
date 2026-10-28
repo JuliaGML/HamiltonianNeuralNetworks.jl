@@ -30,8 +30,8 @@ Random.seed!(1234)
 
 const SYSTEM_PARAMETERS = (m = 1.0, ω = π / 2)
 
-# The largest entry of the flat difference is compared against `1e-14 * eps(T) / eps(Float64)`: the
-# `Done when`'s `1e-14` in `Float64`, and the same number of `eps` in any other precision.
+# The largest entry of the flat difference is compared against `1e-14 * eps(T) / eps(Float64)`: a
+# relative `1e-14` in `Float64`, and the same multiple of `eps` in any other precision.
 tolerance(::Type{T}) where {T} = 1e-14 * eps(T) / eps(Float64)
 
 # The pullback is a function of the *output sensitivity*, which the layerwise construction ignores
@@ -104,10 +104,9 @@ end
     @test maximum_difference(gradient, reference) < tolerance(T)
 end
 
-# Two integrators are four steps, and no monolithic expression reaches them — so this is the first
-# construction that builds the pullback of such a chain at all. This package's own constructors keep
-# refusing it and say where to go instead.
-@testset "two integrators build, which no monolithic expression does ($T)" for T in REAL_ELTYPES
+# Two integrators are four steps. This package's own constructor keeps refusing such a chain and names
+# where to go instead; the layerwise construction builds it.
+@testset "a chain of two integrators builds ($T)" for T in REAL_ELTYPES
     nn = NeuralNetwork(TWO_INTEGRATORS, T)
     input, output = rand(T, 4), rand(T, 4)
     seed = other_precision(T)
@@ -127,7 +126,7 @@ end
         PARAMETRIZED_TWO_INTEGRATORS, ParametricLoss())
 
     # A forced chain holds a `ForcingLayer` between two steps, which the layerwise construction cannot
-    # seed, so the refusal names the traced pullback alone.
+    # seed, so the refusal names `ZygotePullback` alone.
     @test_throws ArgumentError SymbolicPullback(FORCED_TWO_INTEGRATORS, ParametricLoss())
     @test_throws r"cannot seed this architecture's `ForcingLayer`" SymbolicPullback(
         FORCED_TWO_INTEGRATORS, ParametricLoss())

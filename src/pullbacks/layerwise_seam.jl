@@ -8,9 +8,8 @@
 # A `SymplecticEuler` built with `return_parameters = true` does not: it threads the parameters of the
 # *system* on to the next layer, so it takes and returns the pair `(state, μ)`. The four methods below
 # say how it meets the seam, in the interface `SymbolicNeuralNetworks.seam_interface` describes; a
-# layer that declares none of them is declined, and the monolithic construction takes over — which
-# for a chain of more than one integrator does not finish, and for a system with parameters does not
-# build at all.
+# layer that declares none of them is declined, and the monolithic construction takes over, which for
+# a system with parameters does not build at all.
 
 # A system with no parameters carries nothing, and says so with an empty tuple rather than an empty
 # array: there is nothing to hand the generated kernels, and the seam is then the plain vector it is

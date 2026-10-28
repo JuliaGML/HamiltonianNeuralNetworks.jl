@@ -54,10 +54,12 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `run-tests.jl` reports a `core` file whose cold time is above 60 s, and both `core` runs of the
   review report this one: `D6: test/pullbacks/symbolic_pghnn_pullback.jl runs 62.3 s cold, above the
   60 s of a core file` in the critic's, 64.0 s in the build's. A `Pkg.test()` at a load average of
-  39.7 spends 64.4 s of testset time on the file. The file builds a `SymplecticEuler` and the
-  architecture around it, the type that the layerwise seam gives two fields and a type parameter to,
-  and the base was not timed there, so no measurement separates that change from the rest of the
-  time. Moving the file to the `slow` group is what closes it.
+  39.7 spends 64.4 s of testset time on the file. The time follows the load rather than the code:
+  the file holds the same statements on `origin/main` and on the branch, which rewords one comment in
+  it, and run alone from a cold process it takes `selected |471 471 1m30.8s` on a tree of
+  `origin/main` at a load average of 24.6 and `selected |471 471 1m27.3s` on the branch at 26.0 — the
+  tree with the seam's two extra fields and type parameter is the faster of the two. Moving the file
+  to the `slow` group is what closes it.
 
 ## Upstream
 

@@ -66,9 +66,9 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   inlining one layer's expression into the next, and `SymplecticEuler` declares what it carries at
   that seam: the parameters of the system travel beside the state, flat, and the layer puts them back
   into the shape it was built with. So
-  `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` builds for
-  any number of integrators, where one expression for the whole chain exceeds 10⁹ terms at two, and
-  its gradient is that of `Zygote` to machine precision. `ParametricLoss` declares its
+  `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` builds a
+  chain of more than one integrator, which `SymbolicPullback(arch, ParametricLoss())` refuses, and
+  its gradient agrees with `Zygote`'s to `1e-14`. `ParametricLoss` declares its
   `loss_expression` beside it, because a loss that is applied in a five-argument form is one the
   construction cannot guess.
   It covers a stacked state — a vector, or a `2d × k` matrix with one `μ` repeated under its columns —
