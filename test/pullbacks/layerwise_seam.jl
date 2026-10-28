@@ -85,6 +85,26 @@ end
     end
 end
 
+# A stacked batch is a `2d × 1 × k` tensor. A matrix of samples passes the call signature, and the
+# pullback refuses it by naming the forms it takes and the form it got.
+@testset "a matrix batch is an ArgumentError" begin
+    nn = NeuralNetwork(architecture(2), Float64)
+    tensor, matrix = rand(4, 1, 3), rand(4, 3)
+    for (x, y) in ((matrix, matrix), (tensor, matrix), (matrix, tensor))
+        batch = (x, y, SAMPLE_PARAMETERS)
+        @test_throws ArgumentError TWO_INTEGRATORS(params(nn), nn.model, batch)
+        message = try
+            TWO_INTEGRATORS(params(nn), nn.model, batch)
+        catch error
+            sprint(showerror, error)
+        end
+        @test occursin("2d × 1 × k", message)
+        @test occursin("(q, p)", message)
+        @test occursin(summary(x), message)
+        @test occursin(summary(y), message)
+    end
+end
+
 # `train!` takes the pullback as its `loss`, and under one seed it trains as `ZygotePullback` does:
 # the same minibatches, the same gradients to rounding, so the same history and the same parameters.
 @testset "train! with the layerwise pullback ($T)" for T in REAL_ELTYPES

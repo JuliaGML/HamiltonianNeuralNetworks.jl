@@ -229,11 +229,23 @@ function _value_and_scales(model, ps, input::NamedTupleOfArrays{<:Any, (:q, :p)}
     (norm_R_q + norm_R_p) / norm_Y, pinv(norm_R_q), pinv(norm_R_p), norm_Y
 end
 
+# The stacked arm of `_ParametricBatch` admits an array of any dimension, and `apply_parametric`
+# takes a stacked batch only as a `2d × 1 × k` tensor, so any other array is refused by name.
+_check_batch_form(::AbstractArray{<:Any, 3}, ::AbstractArray{<:Any, 3}) = nothing
+_check_batch_form(::NamedTupleOfArrays, ::NamedTupleOfArrays) = nothing
+function _check_batch_form(input, output)
+    throw(ArgumentError(
+        "the batch of `SymbolicPullback(arch, ParametricLoss())` is an input and an output of " *
+        "2d × 1 × k with k values of μ, or a (q, p) pair of d × 1 × k; it got an input " *
+        "$(summary(input)) and an output $(summary(output))."))
+end
+
 # The cotangent of the loss at the output: the residual of each half, scaled by that half's inverse
 # residual norm and by the norm of the target. Each norm divides each entry on its own, because
 # `‖R‖‖Y‖` overflows, and its inverse underflows, where neither norm does.
 function (pb::SymbolicPullback{<:ParametricLoss, <:_LayerwiseParameterGradient})(
         ps::NetworkParameters, model, (input, output, μs)::_ParametricBatch)
+    _check_batch_form(input, output)
     value, inv_R_q, inv_R_p, norm_Y = _value_and_scales(model, ps, input, output, μs)
     state, target = _sample_columns(input), _sample_columns(output)
     half = size(target, 1) ÷ 2
