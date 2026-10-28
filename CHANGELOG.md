@@ -84,7 +84,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   declares no seam, so the sweep cannot compose that chain. `ZygotePullback(ParametricLoss())`, the
   default of `train!`, trains it. No method of a function the package does not own is defined on a
   type it does not own, and the Aqua check runs without an exemption. It relates to
-  JuliaGNI/GeometricMachineLearning.jl#245 and #251.
+  JuliaGNI/GeometricMachineLearning.jl#245 and JuliaGNI/GeometricMachineLearning.jl#251.
 
 ### Dependencies
 
