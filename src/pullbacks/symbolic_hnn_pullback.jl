@@ -94,7 +94,7 @@ function _check_symbolic_pullback_is_tractable(
         GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture})
     n = arch.n_integrators
     n > 1 && throw(ArgumentError(
-        "cannot build *this* `SymbolicPullback` for an architecture with `n_integrators` = $(n): " *
+        "cannot build this `SymbolicPullback` for an architecture with `n_integrators` = $(n): " *
         "it builds one expression for the whole network, which grows multiplicatively with the " *
         "number of integrators, one copy of each step's generated gradient inside the next. " *
         _alternative_pullbacks(arch)))
