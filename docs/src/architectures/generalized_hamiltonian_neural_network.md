@@ -64,9 +64,12 @@ layer's expression inside the next — and has no such limit. A
 [`SymplecticEuler`](@ref HamiltonianNeuralNetworks.SymplecticEuler) step declares what it carries at
 that seam: the parameters of the system travel beside the state and are put back into their own
 shape there. The construction takes one `μ` per call — a stacked state: a vector, or a `2d × k`
-matrix with that `μ` repeated under its columns. It is the one to reach for on a chain of more than
-one integrator, and on a network built with `parameters`, which the monolithic construction cannot
-build at all. It covers [`GeneralizedHamiltonianArchitecture`](@ref) and not
+matrix with that `μ` repeated under its columns — and not a `(q, p)` pair, which reaches upstream
+code that has no method for it (K21 in KNOWN_ISSUES.md). It is the construction that generates the
+gradient of a chain of more than one integrator, and of a network built with `parameters`, which the
+monolithic construction cannot build at all; it is not yet a pullback `train!` takes, because the
+call it makes on the loss passes four arguments, and `ParametricLoss` takes five (K20 in
+KNOWN_ISSUES.md). It covers [`GeneralizedHamiltonianArchitecture`](@ref) and not
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose
 [`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) it cannot seed. `train!` takes a
 `ZygotePullback` of the same loss by default, which has no such limit either.

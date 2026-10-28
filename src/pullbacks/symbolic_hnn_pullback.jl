@@ -77,7 +77,9 @@ The way out, for a [`GeneralizedHamiltonianArchitecture`](@ref), is not to trace
 but to compose the pullback layer by layer:
 `SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` puts fresh
 symbolic variables between two layers instead, and so has no such limit, for any number of
-integrators. The parameters of the system cross between the layers as the seam's carried datum, which
+integrators. It generates the gradient, but it is not yet a pullback `train!` takes: the call it
+makes on the loss passes four arguments, and `ParametricLoss` takes five (K20 in KNOWN_ISSUES.md).
+The parameters of the system cross between the layers as the seam's carried datum, which
 [`SymplecticEuler`](@ref) declares; it takes one `μ` per call, so the gradient of a `2d × k` matrix
 with one `μ` is the sum of the gradients of its columns. That construction does not cover a
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose
@@ -105,8 +107,10 @@ end
 function _alternative_pullbacks(::GeneralizedHamiltonianArchitecture)
     "`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` " *
     "composes the pullback layer by layer instead, with one `μ` per call, and has no such limit; " *
-    "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, is the other " *
-    "option."
+    "it gives the gradient, but not yet a pullback `train!` takes, because the call it makes on " *
+    "the loss passes four arguments where `ParametricLoss` takes five (K20 in KNOWN_ISSUES.md). " *
+    "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, is what trains " *
+    "such a network."
 end
 
 function _alternative_pullbacks(::ForcedGeneralizedHamiltonianArchitecture)

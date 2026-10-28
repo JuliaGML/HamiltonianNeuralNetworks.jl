@@ -75,8 +75,9 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   one set of system parameters per call, and `GeneralizedHamiltonianArchitecture`. It does not cover
   a `(q, p)` pair, which reaches upstream code that has no method for it (K21 in KNOWN_ISSUES.md), a
   vector of `μ` with one set per sample, since a layer of the chain takes one per call, a forced
-  architecture, whose forcing layers it cannot seed, or `train!`, whose loss is applied in a
-  four-argument form (K20).
+  architecture, whose forcing layers it cannot seed, or `train!`, which is handed a pullback and
+  calls it, and so reaches that pullback's own value call, which passes four arguments to the loss
+  where `ParametricLoss` takes five (K20).
 
 ### Dependencies
 

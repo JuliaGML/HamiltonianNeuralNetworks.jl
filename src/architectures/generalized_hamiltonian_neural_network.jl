@@ -184,9 +184,9 @@ layer's own, as for every layer that holds a model.
 It also carries the shape of the parameters of the *system* — their flat length, and the layout that
 puts a flat vector of them back into the shape of `μ`. The layerwise `SymbolicPullback` of
 SymbolicNeuralNetworks carries those parameters flat across the seam between two layers, and this is
-what the layer reassembles them with; see `src/pullbacks/layerwise_seam.jl`. The layout is the last
-type parameter, so that the partial signatures of [`SymplecticEulerA`](@ref) and
-[`SymplecticEulerB`](@ref) go on matching with the layout left free. The layout's type also says
+what the layer reassembles them with. The layout is the last type parameter, so that the partial
+signatures of [`SymplecticEulerA`](@ref) and [`SymplecticEulerB`](@ref) go on matching with the
+layout left free. The layout's type also says
 whether the layer carries anything across that seam: a system without parameters has the empty
 layout, so the number of arguments the seam hands the generated kernels is fixed by the layer's
 type.
