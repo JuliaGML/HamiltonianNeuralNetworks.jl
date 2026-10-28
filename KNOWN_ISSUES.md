@@ -114,6 +114,9 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   `_ParametricBatch` is a union of two tuple types: an array input with an array output, and a
   `(q, p)` pair input with a `(q, p)` pair output. Neither admits a stacked input with a pair output
   or the reverse, so a call with such a batch matches no method and raises a `MethodError`, not the
-  `ArgumentError` that `_check_batch_form` gives every other batch of the wrong form. The entry
-  comes from the review of #5 and from the signature; the call itself is not run here. A
-  `ParametricDataLoader` gives one form for both arrays, so only a hand-built batch reaches it.
+  `ArgumentError` that `_check_batch_form` gives a batch of either form whose arrays are not
+  3-dimensional with a middle size of 1. The review of #5 ran the call on that pull request's head,
+  whose `_ParametricBatch` and call signatures are those of `main`: the forced pullback on a stacked
+  input with a pair output and on the reverse, and the layerwise pullback on a stacked input with a
+  pair output, each raise `MethodError: no method matching (::SymbolicPullback{ParametricLoss, …})`.
+  A `ParametricDataLoader` gives one form for both arrays, so only a hand-built batch reaches it.
