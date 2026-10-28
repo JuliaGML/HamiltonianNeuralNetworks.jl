@@ -11,13 +11,25 @@
 # layer that declares none of them is declined, and the monolithic construction takes over, which for
 # a system with parameters does not build at all.
 
+# Whether the layer carries the parameters of the system across the seam is a property of its type,
+# because the sweep splats what `seam_arguments` returns into the generated kernels and that call
+# infers only if the length of the tuple is known from the type. The layout of the parameters is the
+# layer's last type parameter, and a system without them — `NullParameters()`, `NamedTuple()`, or
+# parameters that flatten to no entries — has the empty layout, so a test of the layout's type is
+# folded away by the compiler.
+const _ParameterFreeLayout = typeof(_PARAMETER_FREE_LAYOUT)
+
+function _carries_parameters(integrator::SymplecticEuler)
+    !(integrator.parameter_layout isa _ParameterFreeLayout)
+end
+
 # A system with no parameters carries nothing, and says so with an empty tuple rather than an empty
 # array: there is nothing to hand the generated kernels, and the seam is then the plain vector it is
 # for every other layer. The layer is still applied without them, which its own two-argument functor
 # supplies as `NullParameters()`.
 function SymbolicNeuralNetworks.carried_variables(integrator::SymplecticEuler)
-    iszero(integrator.parameter_length) ? () :
-    (Symbolics.variables(:π, 1:integrator.parameter_length),)
+    _carries_parameters(integrator) ?
+    (Symbolics.variables(:π, 1:integrator.parameter_length),) : ()
 end
 
 # The generated kernels take the parameters of the system flat, which is how the forward pass feeds
@@ -40,8 +52,7 @@ end
 # column of a matrix, as the forward pass does with them.
 function SymbolicNeuralNetworks.seam_arguments(integrator::SymplecticEuler, x::Tuple)
     state = _seam_state(first(x))
-    iszero(integrator.parameter_length) ? (state,) :
-    (state, _seam_parameters(last(x), state))
+    _carries_parameters(integrator) ? (state, _seam_parameters(last(x), state)) : (state,)
 end
 
 # The state alone is a seam only for a system without parameters: the kernels of a layer that
@@ -50,7 +61,7 @@ end
 # check of `_energy_input` raises first; this is the guard for a direct call.
 function SymbolicNeuralNetworks.seam_arguments(integrator::SymplecticEuler,
         qp::Union{AbstractArray, NamedTupleOfArrays{<:Any, (:q, :p)}})
-    iszero(integrator.parameter_length) || throw(ArgumentError(
+    _carries_parameters(integrator) && throw(ArgumentError(
         "the system of this `SymplecticEuler` has $(integrator.parameter_length) parameter(s), so " *
         "the pullback has to be given `(state, system parameters)` rather than the state alone."))
     (_seam_state(qp),)

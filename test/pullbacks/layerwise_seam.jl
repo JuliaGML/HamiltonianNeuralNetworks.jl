@@ -13,7 +13,8 @@
 
 using HamiltonianNeuralNetworks
 using GeometricMachineLearning: NeuralNetwork, ParametricLoss, apply_parametric
-using AbstractNeuralNetworks: FeedForwardLoss, params
+using AbstractNeuralNetworks: Chain, FeedForwardLoss, params
+using GeometricBase: NullParameters
 using NeuralNetworkParameters: flatten
 using LinearAlgebra: norm
 using Test
@@ -199,15 +200,20 @@ end
 @testset "the seam the layers declare" begin
     free_layer = first(symbolic_steps(SymbolicNeuralNetwork(PARAMETER_FREE)))[1]
     parametrized_layer = first(symbolic_steps(SymbolicNeuralNetwork(PARAMETRIZED)))[1]
+    state, matrix = rand(4), rand(4, 3)
 
     # a system without parameters carries nothing, and says so with `()`
-    @test SymbolicNeuralNetworks.carried_variables(free_layer) === ()
+    @test @inferred(SymbolicNeuralNetworks.carried_variables(free_layer)) === ()
     @test free_layer.parameter_length == 0
     @test isconcretetype(fieldtype(typeof(free_layer), :parameter_layout))
-    state = rand(4)
-    @test SymbolicNeuralNetworks.seam_arguments(free_layer, state) == (state,)
-    @test SymbolicNeuralNetworks.seam_arguments(free_layer, (state, SYSTEM_PARAMETERS)) ==
-          (state,)
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(free_layer, state)) == (state,)
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        free_layer, (state, SYSTEM_PARAMETERS))) == (state,)
+    # the pair a parameter-free chain hands its later layers: the state and no parameters
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        free_layer, (state, NullParameters()))) == (state,)
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        free_layer, (matrix, NullParameters()))) == (matrix,)
 
     # one carried array of `parameter_length` symbolic variables
     carried = SymbolicNeuralNetworks.carried_variables(parametrized_layer)
@@ -220,13 +226,42 @@ end
     flat_parameters = [1.0, π / 2]
     @test last(SymbolicNeuralNetworks.seam_value(parametrized_layer, [0.0], flat_parameters)) ==
           SYSTEM_PARAMETERS
-    @test SymbolicNeuralNetworks.seam_arguments(parametrized_layer, (
-        state, SYSTEM_PARAMETERS)) ==
-          (state, flat_parameters)
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        parametrized_layer, (state, SYSTEM_PARAMETERS))) == (state, flat_parameters)
     # one set of parameters for a matrix of samples is repeated under each of its columns
-    matrix = rand(4, 3)
-    @test SymbolicNeuralNetworks.seam_arguments(
-        parametrized_layer, (matrix, SYSTEM_PARAMETERS))[2] == repeat(flat_parameters, 1, 3)
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        parametrized_layer, (matrix, SYSTEM_PARAMETERS))) ==
+          (matrix, repeat(flat_parameters, 1, 3))
+
+    # one parameter is one carried value, and the seam is two arguments long all the same
+    one_parameter = (m = 1.0,)
+    one_parameter_architecture = GeneralizedHamiltonianArchitecture(
+        4; width = 2, nhidden = 1,
+        parameters = one_parameter)
+    one_parameter_layer = first(symbolic_steps(SymbolicNeuralNetwork(
+        one_parameter_architecture)))[1]
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        one_parameter_layer, (state, one_parameter))) == (state, [1.0])
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        one_parameter_layer, (matrix, one_parameter))) == (matrix, repeat([1.0], 1, 3))
+
+    # the generated kernels take the state and then exactly what `carried_variables` declared
+    seams = ((free_layer, state), (free_layer, (state, NullParameters())),
+        (free_layer, (state, SYSTEM_PARAMETERS)),
+        (parametrized_layer, (state, SYSTEM_PARAMETERS)),
+        (parametrized_layer, (matrix, SYSTEM_PARAMETERS)))
+    for (layer, x) in seams
+        @test length(SymbolicNeuralNetworks.seam_arguments(layer, x)) ==
+              1 + length(SymbolicNeuralNetworks.carried_variables(layer))
+    end
+
+    # parameters that flatten to no entries are no parameters, and carry nothing
+    empty_parameters = (a = Float64[],)
+    empty_layer = first(Chain(GeneralizedHamiltonianArchitecture(4; width = 2, nhidden = 1,
+        parameters = empty_parameters)).layers)
+    @test @inferred(SymbolicNeuralNetworks.carried_variables(empty_layer)) === ()
+    @test @inferred(SymbolicNeuralNetworks.seam_arguments(
+        empty_layer, (state, empty_parameters))) == (state,)
 
     # the state alone is a seam only for a system without parameters
     @test_throws ArgumentError SymbolicNeuralNetworks.seam_arguments(parametrized_layer, state)

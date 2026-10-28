@@ -36,6 +36,10 @@ function _check_width(width::Integer)
     width
 end
 
+# The layout of a system without parameters, `NullParameters()` and `NamedTuple()` alike.
+const _PARAMETER_FREE_LAYOUT = last(
+    GeometricMachineLearning._flatten_system_parameters(NullParameters()))
+
 @doc raw"""
     SymbolicEnergy
 
@@ -47,6 +51,10 @@ state it differentiates and the parameters of the system, from which `Chain` bui
 vector, which is what the first layer of the network adds to its input, and the layout that puts such
 a vector back into the shape of `μ`. The names are `ParametricResNetLayer`'s, which carries the same
 pair for the same reasons.
+
+A system whose parameters flatten to no entries — `NullParameters()`, `NamedTuple()` or a
+`NamedTuple` of empty arrays — has the layout of `NullParameters()`, which is how a
+[`SymplecticEuler`](@ref) step built from it knows that it carries nothing.
 
 See [`SymbolicPotentialEnergy`](@ref) and [`SymbolicKineticEnergy`](@ref).
 """
@@ -66,6 +74,12 @@ function SymbolicEnergy(::Val{Kinetic}, dim::Integer, width::Integer, nhidden::I
     _activation = Activation(activation)
     flat_parameters, layout = GeometricMachineLearning._flatten_system_parameters(
         parameters)
+    # A system whose parameters flatten to no entries has none, and the layout of none: the type of the
+    # layout is what tells a step whether it carries the parameters across the seam of the layerwise
+    # pullback (`src/pullbacks/layerwise_seam.jl`).
+    if isempty(flat_parameters)
+        layout = _PARAMETER_FREE_LAYOUT
+    end
     SymbolicEnergy{typeof(_activation), Kinetic, typeof(layout)}(
         Int(dim), Int(width), Int(nhidden), length(flat_parameters), layout, _activation)
 end
@@ -172,7 +186,10 @@ puts a flat vector of them back into the shape of `μ`. The layerwise `SymbolicP
 SymbolicNeuralNetworks carries those parameters flat across the seam between two layers, and this is
 what the layer reassembles them with; see `src/pullbacks/layerwise_seam.jl`. The layout is the last
 type parameter, so that the partial signatures of [`SymplecticEulerA`](@ref) and
-[`SymplecticEulerB`](@ref) go on matching with the layout left free.
+[`SymplecticEulerB`](@ref) go on matching with the layout left free. The layout's type also says
+whether the layer carries anything across that seam: a system without parameters has the empty
+layout, so the number of arguments the seam hands the generated kernels is fixed by the layer's
+type.
 """
 struct SymplecticEuler{
     M, N, FT <: Base.Callable, MT <: Chain, type, ReturnParameters, PT} <:
