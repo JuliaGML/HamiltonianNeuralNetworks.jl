@@ -63,94 +63,46 @@ function SymbolicPullback(
 end
 
 @doc raw"""
-    _check_symbolic_pullback_is_tractable(arch)
-
-Refuse an architecture whose chain holds more than one integrator.
-
-The pullback traces the whole chain, and a [`SymplecticEuler`](@ref) step inlines the generated
-gradient of its energy network — an expression that is itself already a derivative. Stacking
-integrators inlines that expression inside the next step's, so one expression for the chain holds a
-copy of it per integrator, each inside the next, and grows multiplicatively with the number of
-integrators.
-
-The way out, for a [`GeneralizedHamiltonianArchitecture`](@ref), is not to trace the inlined chain
-but to compose the pullback layer by layer:
-`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` puts fresh
-symbolic variables between two layers instead, and so has no such limit, for any number of
-integrators. It generates the gradient, but it is not yet a pullback `train!` takes: the call it
-makes on the loss passes four arguments, and `ParametricLoss` takes five (K20 in KNOWN_ISSUES.md).
-The parameters of the system cross between the layers as the seam's carried datum, which
-[`SymplecticEuler`](@ref) declares; it takes one `μ` per call, so the gradient of a `2d × k` matrix
-with one `μ` is the sum of the gradients of its columns. That construction does not cover a
-[`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose
-[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) it cannot seed.
-
-`ZygotePullback(ParametricLoss())` differentiates through the chain rather than generating an
-expression for it, and has no such limit either; it is what `train!` takes by default, and it is the
-way out of the refusal for a forced architecture.
-"""
-function _check_symbolic_pullback_is_tractable(
-        arch::Union{
-        GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture})
-    n = arch.n_integrators
-    n > 1 && throw(ArgumentError(
-        "cannot build this `SymbolicPullback` for an architecture with `n_integrators` = $(n): " *
-        "it builds one expression for the whole network, which grows multiplicatively with the " *
-        "number of integrators, one copy of each step's generated gradient inside the next. " *
-        _alternative_pullbacks(arch)))
-    nothing
-end
-
-# What the refusal names as the way out, per architecture: the layerwise pullback of
-# `SymbolicNeuralNetworks` composes a generalized chain layer by layer and has no such limit, and on
-# a forced chain it declines, because a `ForcingLayer` cannot be seeded.
-function _alternative_pullbacks(::GeneralizedHamiltonianArchitecture)
-    "`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` " *
-    "composes the pullback layer by layer instead, with one `μ` per call, and has no such limit; " *
-    "it gives the gradient, but is not yet a pullback `train!` takes, because the call it makes on " *
-    "the loss passes four arguments where `ParametricLoss` takes five (K20 in KNOWN_ISSUES.md). " *
-    "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, is what trains " *
-    "such a network."
-end
-
-function _alternative_pullbacks(::ForcedGeneralizedHamiltonianArchitecture)
-    "`SymbolicNeuralNetworks` cannot seed this architecture's `ForcingLayer`, so its layerwise " *
-    "construction does not build here; `ZygotePullback(ParametricLoss())`, which is what `train!` " *
-    "takes by default, is the option."
-end
-
-@doc raw"""
     SymbolicPullback(arch, ::ParametricLoss)
 
 Make a `SymbolicPullback` of [`ParametricLoss`](@extref GeometricMachineLearning.ParametricLoss) for
 a [`GeneralizedHamiltonianArchitecture`](@ref) or a
 [`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose forward pass takes the parameters of the
-*system*.
+*system*. `train!` takes it as its `loss`.
 
 Its value is `ParametricLoss` on the batch, and its gradient is the gradient of that value. On a
-stacked batch the value is ``\ell = \|R\|/\|Y\|`` with ``R = \mathrm{NN}(X, \mu) - Y``, and its
-gradient is ``\Delta \sum_i \nabla_\theta \tfrac12\|r_i\|^2 / (\|R\|\,\|Y\|)``: the generated
-per-sample gradient of the surrogate ``\tfrac12\|r_i\|^2``, summed over the batch and scaled by the
-two norms. On a `(q, p)` batch the value is ``\ell = (\|R_q\| + \|R_p\|)/(\|Y_q\| + \|Y_p\|)`` — each
-half scaled by its own norm, which is what the loss does with a `(q, p)` pair — and the gradient is
-``\Delta (\sum_i \nabla_\theta \tfrac12\|r_{q,i}\|^2/\|R_q\| + \sum_i \nabla_\theta
-\tfrac12\|r_{p,i}\|^2/\|R_p\|) / (\|Y_q\| + \|Y_p\|)``. The gradient has the parameters' element
+stacked batch the value is ``\ell = \|R\|/\|Y\|`` with ``R = \mathrm{NN}(X, \mu) - Y``, and on a
+`(q, p)` batch it is ``\ell = (\|R_q\| + \|R_p\|)/(\|Y_q\| + \|Y_p\|)`` — each half scaled by its own
+norm, which is what the loss does with a `(q, p)` pair. The gradient has the parameters' element
 type, and a zero residual gives a zero gradient.
-
-The parameters of the system that `arch` holds fix the shape of $\mu$, and with it the length of the
-input of the generated function: the entries of $\mu$ follow the state of a sample there, and the
-symbolic expression splits them off again. Their *values* enter with each call, one per sample.
 
 # The batch
 
 The pullback takes what a
 [`ParametricDataLoader`](@extref GeometricMachineLearning.ParametricDataLoader) draws: an input and
-an output of $2d \times 1 \times k$ with $k$ values of $\mu$, or a `(q, p)` pair of
+an output of $2d \times 1 \times k$ with $k$ values of $\mu$, one per sample, or a `(q, p)` pair of
 $d \times 1 \times k$. A matrix with one $\mu$ is not one of the forms `apply_parametric` takes.
 
-The two batch forms are two quantities on one batch, because the loss weighs them differently:
-stacked, `q` above `p`, one norm covers both halves; as a pair, each half is scaled by its own. Each
-form's value and gradient are those of `ParametricLoss` on that same form.
+# The construction
+
+The parameters of the system that `arch` holds fix the shape of $\mu$; their *values* enter with each
+call, one per sample.
+
+For a `GeneralizedHamiltonianArchitecture` the pullback is composed layer by layer, by the layerwise
+sweep of `SymbolicNeuralNetworks`: each [`SymplecticEuler`](@ref) step gets generated code of its
+own, and the parameters of the system cross between two steps beside the state. So the expression a
+step is built from holds that step alone, and any number of integrators builds. At a call the sweep
+is seeded with the cotangent of the loss at the output — the residual of each half, scaled by the two
+norms the value divides by — so the gradient of the batch comes out of one backward pass.
+
+For a `ForcedGeneralizedHamiltonianArchitecture` the sweep does not apply, because the
+[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) of its chain declares no seam for
+it. The pullback is then built from one expression for the whole chain, the generated per-sample
+gradient of ``\tfrac12\|r_i\|^2`` for each half, which is scaled at a call the same way. That
+expression holds one copy of each step's generated gradient inside the next, so it grows
+multiplicatively with the number of integrators, and a forced architecture with `n_integrators > 1`
+is an `ArgumentError`; `ZygotePullback(ParametricLoss())`, which is what `train!` takes by default,
+trains it.
 
 `SymbolicPullback(arch::HamiltonianArchitecture)` is the pullback of `HNNLoss` and keeps its
 signature; a generalized architecture is refused there.
@@ -159,6 +111,43 @@ function SymbolicPullback(
         arch::Union{
             GeneralizedHamiltonianArchitecture, ForcedGeneralizedHamiltonianArchitecture},
         ::ParametricLoss; cse::Bool = true, inplace::Bool = true)
+    SymbolicPullback(ParametricLoss(), _parametric_gradient(arch; cse, inplace))
+end
+
+# The stand-in loss the layerwise sweep is built for. Its seed at the output is the residual
+# `ŷ - y`; a call of the pullback replaces that seed by the residual scaled to the cotangent of
+# `ParametricLoss`, which depends on the norms of the whole batch.
+struct _HalfSquaredResidual <: NetworkLoss end
+
+function SymbolicNeuralNetworks.loss_expression(::_HalfSquaredResidual, ŷ, y)
+    sum(abs2, ŷ - y) / 2
+end
+
+# The `fun` of the layerwise pullback; it holds the sweep and selects the call method below.
+struct _LayerwiseParameterGradient{GT}
+    gradient_function::GT
+end
+
+function _parametric_gradient(arch::GeneralizedHamiltonianArchitecture; cse, inplace)
+    pullback = SymbolicNeuralNetworks.SymbolicPullback(
+        SymbolicNeuralNetwork(arch), _HalfSquaredResidual(); layerwise = true, cse, inplace)
+    _LayerwiseParameterGradient(pullback.fun.gradient_function)
+end
+
+# The sweep with another seed: the generated code of the steps does not depend on the loss.
+function _reseeded(sweep::SymbolicNeuralNetworks.LayerwiseGradientFunction{Keys},
+        seed) where {Keys}
+    SymbolicNeuralNetworks.LayerwiseGradientFunction{Keys}(sweep.steps, seed)
+end
+
+# The `fun` of the pullback built from one expression; it holds the generated gradient of the two
+# halves and selects the call method below.
+struct _PGHNNParameterGradient{FT}
+    gradient_function::FT
+end
+
+function _parametric_gradient(
+        arch::ForcedGeneralizedHamiltonianArchitecture; cse, inplace)
     _check_symbolic_pullback_is_tractable(arch)
 
     symbolic_network = SymbolicNeuralNetwork(arch)
@@ -177,7 +166,7 @@ function SymbolicPullback(
     # One surrogate per half of the state, generated together: a `(q, p)` batch scales the gradient
     # of each half by that half's own residual norm, and a stacked batch by the norm of their sum, so
     # the two conventions come out of one function rather than two. The symbolic model returns a
-    # stacked state, `q` above `p`, for either architecture.
+    # stacked state, `q` above `p`.
     half = state_dimension ÷ 2
     residuals = (q = output[1:half] - soutput[1:half],
         p = output[(half + 1):end] - soutput[(half + 1):end])
@@ -188,16 +177,31 @@ function SymbolicPullback(
     gradient_function = SymbolicNeuralNetworks.build_nn_function(
         gradient, symbolic_network_parameters, sinput, soutput;
         reduce = +, cse = cse, inplace = inplace)
-    SymbolicPullback(ParametricLoss(), _PGHNNParameterGradient(gradient_function))
+    _PGHNNParameterGradient(gradient_function)
 end
 
-# The `fun` of the parametric pullback; it holds the generated gradient and selects the call methods
-# below.
-struct _PGHNNParameterGradient{FT}
-    gradient_function::FT
+# The expression of a forced chain holds one copy of each step's generated gradient inside the next,
+# and the layerwise sweep, which would avoid that, cannot compose the chain past its `ForcingLayer`.
+function _check_symbolic_pullback_is_tractable(arch::ForcedGeneralizedHamiltonianArchitecture)
+    n = arch.n_integrators
+    n > 1 && throw(ArgumentError(
+        "cannot build a `SymbolicPullback` for a `ForcedGeneralizedHamiltonianArchitecture` with " *
+        "`n_integrators` = $(n): its pullback is one expression for the whole chain, which holds " *
+        "one copy of each step's generated gradient inside the next, and the layerwise sweep of " *
+        "`SymbolicNeuralNetworks` cannot compose the chain past its `ForcingLayer`. Use " *
+        "`ZygotePullback(ParametricLoss())`, which is what `train!` takes by default, or a network " *
+        "with one integrator."))
+    nothing
 end
 
-# The batch as the generated function takes it: one column per sample. The state and the target are
+# The batch forms of a `ParametricDataLoader`: a stacked `2d × 1 × k` input and output, or a `(q, p)`
+# pair of `d × 1 × k` tensors, each with `k` values of `μ`.
+const _ParametricBatch = Union{
+    Tuple{<:AbstractArray, <:AbstractArray, <:AbstractVector},
+    Tuple{<:NamedTupleOfArrays{<:Any, (:q, :p)}, <:NamedTupleOfArrays{<:Any, (:q, :p)},
+        <:AbstractVector}}
+
+# The batch as the generated code takes it: one column per sample. The state and the target are
 # stacked this way, `q` above `p`, as the data of a `ParametricDataLoader` are whenever they are not
 # already stacked.
 _sample_columns(x::AbstractArray{<:Any, 3}) = reshape(x, size(x, 1), size(x, 3))
@@ -205,47 +209,58 @@ function _sample_columns(x::NamedTupleOfArrays{<:Any, (:q, :p)})
     vcat(_sample_columns(x.q), _sample_columns(x.p))
 end
 
-# The input of the generated function, whose columns are the state of a sample with that sample's
-# parameters below it. The columns are concatenated side by side, so the result has
-# `input_dimension + |μ|` rows and one column per sample.
-function _sample_input(input, μs)
-    GeometricMachineLearning.concatenate_array_with_parameters(_sample_columns(input), μs)
-end
-
-function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
-        ps::NetworkParameters, model,
-        (input, output, μs)::Tuple{<:AbstractArray, <:AbstractArray, <:AbstractVector})
+# The value of `ParametricLoss` on a batch, and what its gradient is scaled by: the inverse residual
+# norm of each half of the state and the norm of the target. `pinv`: a zero residual gives the zero
+# gradient, not `NaN`. A stacked batch has one residual norm over both halves.
+function _value_and_scales(model, ps, input::AbstractArray, output::AbstractArray, μs)
     target = _sample_columns(output)
     norm_R = norm(_sample_columns(apply_parametric(model, input, μs, ps)) - target)
     norm_Y = norm(target)
-    # `pinv`: a zero residual gives the zero gradient, not `NaN`. Each norm divides each entry on its
-    # own, because `‖R‖‖Y‖` overflows, and its inverse underflows, where neither norm does.
-    inv_R = pinv(norm_R)
-    TP = parameter_eltype(ps)
-    gradient_function = pb.fun.gradient_function
-    # One norm over both halves, so the gradients of the two halves add up before they are scaled.
-    norm_R / norm_Y,
-    Δ -> mapstorage((g_q, g_p) -> TP.((g_q .+ g_p) .* Δ .* inv_R ./ norm_Y),
-        gradient_function(_sample_input(input, μs), target, ps)...)
+    norm_R / norm_Y, pinv(norm_R), pinv(norm_R), norm_Y
 end
 
-function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
-        ps::NetworkParameters, model,
-        (input,
-            output,
-            μs)::Tuple{<:NamedTupleOfArrays{<:Any, (:q, :p)},
-            <:NamedTupleOfArrays{<:Any, (:q, :p)}, <:AbstractVector})
+function _value_and_scales(model, ps, input::NamedTupleOfArrays{<:Any, (:q, :p)},
+        output::NamedTupleOfArrays{<:Any, (:q, :p)}, μs)
     prediction = apply_parametric(model, input, μs, ps)
     target_q, target_p = _sample_columns(output.q), _sample_columns(output.p)
     norm_R_q = norm(_sample_columns(prediction.q) - target_q)
     norm_R_p = norm(_sample_columns(prediction.p) - target_p)
     norm_Y = norm(target_q) + norm(target_p)
-    # `pinv` per half: a zero residual in one half gives the zero gradient there, not `NaN`.
-    inv_R_q, inv_R_p = pinv(norm_R_q), pinv(norm_R_p)
+    (norm_R_q + norm_R_p) / norm_Y, pinv(norm_R_q), pinv(norm_R_p), norm_Y
+end
+
+# The cotangent of the loss at the output: the residual of each half, scaled by that half's inverse
+# residual norm and by the norm of the target. Each norm divides each entry on its own, because
+# `‖R‖‖Y‖` overflows, and its inverse underflows, where neither norm does.
+function (pb::SymbolicPullback{<:ParametricLoss, <:_LayerwiseParameterGradient})(
+        ps::NetworkParameters, model, (input, output, μs)::_ParametricBatch)
+    value, inv_R_q, inv_R_p, norm_Y = _value_and_scales(model, ps, input, output, μs)
+    state, target = _sample_columns(input), _sample_columns(output)
+    half = size(target, 1) ÷ 2
+    TP = parameter_eltype(ps)
+    value,
+    function (Δ)
+        seed = (ŷ, y, _) -> vcat(
+            (ŷ[1:half, :] - y[1:half, :]) .* Δ .* inv_R_q ./ norm_Y,
+            (ŷ[(half + 1):end, :] - y[(half + 1):end, :]) .* Δ .* inv_R_p ./ norm_Y)
+        gradient = _reseeded(pb.fun.gradient_function, seed)((state, μs), target, ps)
+        mapstorage(g -> TP.(g), gradient)
+    end
+end
+
+# The input of the generated function of one expression, whose columns are the state of a sample
+# with that sample's parameters below it.
+function _sample_input(input, μs)
+    GeometricMachineLearning.concatenate_array_with_parameters(_sample_columns(input), μs)
+end
+
+function (pb::SymbolicPullback{<:ParametricLoss, <:_PGHNNParameterGradient})(
+        ps::NetworkParameters, model, (input, output, μs)::_ParametricBatch)
+    value, inv_R_q, inv_R_p, norm_Y = _value_and_scales(model, ps, input, output, μs)
     TP = parameter_eltype(ps)
     gradient_function = pb.fun.gradient_function
-    # Each half is scaled by its own residual norm, so the two gradients cannot be added first.
-    (norm_R_q + norm_R_p) / norm_Y,
-    Δ -> mapstorage((g_q, g_p) -> TP.((g_q .* inv_R_q .+ g_p .* inv_R_p) .* Δ ./ norm_Y),
+    value,
+    Δ -> mapstorage(
+        (g_q, g_p) -> TP.((g_q .* inv_R_q .+ g_p .* inv_R_p) .* Δ ./ norm_Y),
         gradient_function(_sample_input(input, μs), _sample_columns(output), ps)...)
 end

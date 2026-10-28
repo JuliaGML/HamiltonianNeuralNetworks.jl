@@ -243,6 +243,10 @@ function SymplecticEulerB(se::SymbolicPotentialEnergy; return_parameters::Bool)
         gradient_function, energy_model, se.parameter_length, se.parameter_layout)
 end
 
+# The parameters of the system as a step takes them: one `μ` for the whole call, or a vector of them,
+# one under each column of a matrix of samples.
+const _SystemParameters = Union{OptionalParameters, AbstractVector}
+
 # The input of the energy network: the half of the state the step differentiates, with the
 # flattened parameters of the system below it. `concatenate_array_with_parameters` is GML's, as it is
 # for the parametric layers of GML itself, and returns the state unchanged without parameters.
@@ -272,13 +276,13 @@ function _step(integrator::SymplecticEuler{M, M, FT, MT, :B}, qp, μ,
 end
 
 function (integrator::SymplecticEuler{M, M, FT, MT, type, false})(
-        qp::NamedTupleOfArrays{<:Any, (:q, :p)}, μ::OptionalParameters,
+        qp::NamedTupleOfArrays{<:Any, (:q, :p)}, μ::_SystemParameters,
         ps) where {M, FT, MT, type}
     _step(integrator, qp, μ, ps)
 end
 
 function (integrator::SymplecticEuler{M, M, FT, MT, type, true})(
-        qp::NamedTupleOfArrays{<:Any, (:q, :p)}, μ::OptionalParameters,
+        qp::NamedTupleOfArrays{<:Any, (:q, :p)}, μ::_SystemParameters,
         ps) where {M, FT, MT, type}
     _step(integrator, qp, μ, ps), μ
 end
@@ -286,27 +290,27 @@ end
 # A stacked state has its `(q, p)` split taken here and is stacked again on the way out. A `Chain`
 # hands the layer either the state or the pair of the state and the system parameters.
 function (integrator::SymplecticEuler{M, M, FT, MT, type, false})(
-        x::AbstractArray, μ::OptionalParameters,
+        x::AbstractArray, μ::_SystemParameters,
         ps) where {M, FT, MT, type}
     output = _step(integrator, GeometricMachineLearning.assign_q_and_p(x, M ÷ 2), μ, ps)
     vcat(output.q, output.p)
 end
 
 function (integrator::SymplecticEuler{M, M, FT, MT, type, true})(
-        x::AbstractArray, μ::OptionalParameters,
+        x::AbstractArray, μ::_SystemParameters,
         ps) where {M, FT, MT, type}
     output = _step(integrator, GeometricMachineLearning.assign_q_and_p(x, M ÷ 2), μ, ps)
     (vcat(output.q, output.p), μ)
 end
 
 function (integrator::SymplecticEuler)(
-        qp_and_μ::Tuple{<:NamedTupleOfArrays{<:Any, (:q, :p)}, <:OptionalParameters},
+        qp_and_μ::Tuple{<:NamedTupleOfArrays{<:Any, (:q, :p)}, <:_SystemParameters},
         ps)
     integrator(qp_and_μ..., ps)
 end
 
 function (integrator::SymplecticEuler)(
-        x_and_μ::Tuple{<:AbstractArray, <:OptionalParameters}, ps)
+        x_and_μ::Tuple{<:AbstractArray, <:_SystemParameters}, ps)
     integrator(x_and_μ..., ps)
 end
 

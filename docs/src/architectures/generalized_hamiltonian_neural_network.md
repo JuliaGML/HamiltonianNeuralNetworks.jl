@@ -53,26 +53,22 @@ Its `forcing_type` names what the forcing reads — `:Q`, `:P` or `:QP` — as i
 [`HNNLoss`](@ref) and takes a scalar Hamiltonian. A generalized Hamiltonian network is a map rather
 than a scalar Hamiltonian, so its pullback is
 [`SymbolicPullback(arch, ParametricLoss())`](@ref SymbolicPullback(::Union{HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, HamiltonianNeuralNetworks.ForcedGeneralizedHamiltonianArchitecture}, ::HamiltonianNeuralNetworks.ParametricLoss)),
-which generates the gradient of the parametric loss in closed form. It is one expression for the
-whole chain, so a chain of more than one integrator is refused: each step inlines the generated
-gradient of its energy network, and such an expression then holds one copy of it per integrator,
-each inside the next.
+which generates the gradient of the parametric loss, and which `train!` takes as its `loss`.
 
-`SymbolicNeuralNetworks.SymbolicPullback(SymbolicNeuralNetwork(arch), ParametricLoss())` composes
-the pullback layer by layer instead — fresh symbolic variables between two layers rather than one
-layer's expression inside the next — and has no such limit. A
+For a [`GeneralizedHamiltonianArchitecture`](@ref) the pullback is composed layer by layer, by the
+layerwise sweep of `SymbolicNeuralNetworks`: fresh symbolic variables between two layers rather
+than one layer's expression inside the next. A
 [`SymplecticEuler`](@ref HamiltonianNeuralNetworks.SymplecticEuler) step declares what it carries at
-that seam: the parameters of the system travel beside the state and are put back into their own
-shape there. The construction takes one `μ` per call — a stacked state: a vector, or a `2d × k`
-matrix with that `μ` repeated under its columns — and not a `(q, p)` pair, which reaches upstream
-code that has no method for it (K21 in KNOWN_ISSUES.md). It is the construction that generates the
-gradient of a chain of more than one integrator, and of a network built with `parameters`, which the
-monolithic construction of `SymbolicNeuralNetworks` cannot build at all; it is not yet a pullback
-`train!` takes, because the call it makes on the loss passes four arguments, and `ParametricLoss`
-takes five (K20 in KNOWN_ISSUES.md). It covers [`GeneralizedHamiltonianArchitecture`](@ref) and not
-[`ForcedGeneralizedHamiltonianArchitecture`](@ref), whose
-[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) it cannot seed. `train!` takes a
-`ZygotePullback` of the same loss by default, which has no such limit either.
+that seam: the parameters of the system travel beside the state, flat, one column per sample, and
+are put back into their own shape there. Each step is then generated code of its own, and a chain of
+any number of integrators builds.
+
+A [`ForcedGeneralizedHamiltonianArchitecture`](@ref) holds a
+[`ForcingLayer`](@extref GeometricMachineLearning.ForcingLayer) between two steps, which declares no
+such seam, so its pullback is one expression for the whole chain. Each step inlines the generated
+gradient of its energy network, and such an expression then holds one copy of it per integrator,
+each inside the next, so a forced chain of more than one integrator is refused. `train!` takes a
+`ZygotePullback` of the same loss by default, which has no such limit.
 
 ## Library Functions
 
@@ -87,5 +83,4 @@ HamiltonianNeuralNetworks.SymplecticEuler
 HamiltonianNeuralNetworks.SymplecticEulerA
 HamiltonianNeuralNetworks.SymplecticEulerB
 HamiltonianNeuralNetworks.SymbolicPullback(::Union{HamiltonianNeuralNetworks.GeneralizedHamiltonianArchitecture, HamiltonianNeuralNetworks.ForcedGeneralizedHamiltonianArchitecture}, ::HamiltonianNeuralNetworks.ParametricLoss)
-HamiltonianNeuralNetworks._check_symbolic_pullback_is_tractable
 ```

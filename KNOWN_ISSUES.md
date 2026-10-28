@@ -45,22 +45,6 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   belongs with the data signatures of the losses as a whole: either each loss accepts only the data
   its vector field can take, or `(q, p)` data is converted before it reaches the field.
 
-### K22 · `test/pullbacks/symbolic_pghnn_pullback.jl` takes 62–64 s, above the 60 s that a file of the `core` group may take.
-
-- **location:** `test/pullbacks/symbolic_pghnn_pullback.jl`
-- **kind:** found late
-- **found:** 2026-10-28, in the review of the layerwise seam, round 1
-- **evidence:**
-  `run-tests.jl` reports a `core` file whose cold time is above 60 s, and both `core` runs of the
-  review report this one: `D6: test/pullbacks/symbolic_pghnn_pullback.jl runs 62.3 s cold, above the
-  60 s of a core file` in the critic's, 64.0 s in the build's. A `Pkg.test()` at a load average of
-  39.7 spends 64.4 s of testset time on the file. The time follows the load rather than the code:
-  the file holds the same statements on `origin/main` and on the branch, which rewords one comment in
-  it, and run alone from a cold process it takes `selected |471 471 1m30.8s` on a tree of
-  `origin/main` at a load average of 24.6 and `selected |471 471 1m27.3s` on the branch at 26.0 — the
-  tree with the seam's two extra fields and type parameter is the faster of the two. Moving the file
-  to the `slow` group is what closes it.
-
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
@@ -85,49 +69,6 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
 
   The training testset of the `(q, p)` form therefore asserts the length and the finiteness of the
   history and the change of every leaf, and not its element type.
-
-### K20 · The layerwise `SymbolicPullback` of `ParametricLoss` gives a gradient, but calling the pullback raises a `MethodError`, so `SymbolicPullback(arch, ParametricLoss())` keeps its refusal.
-
-- **location:** `src/pullbacks/layerwise_seam.jl`
-- **kind:** upstream
-- **found:** 2026-10-27, in the layerwise seam; GeometricMachineLearning #245's remaining half
-- **evidence:**
-  The layerwise construction of SymbolicNeuralNetworks takes the gradient as `pullback.fun(input,
-  output, ps)(Δ)`, and that works for a parametrized generalized Hamiltonian network: on
-  `GeneralizedHamiltonianArchitecture(4; width = 2, nhidden = 1, parameters = (m = 1.0, ω = π/2))`
-  it returns a `Vector{Float64}` of the parameters' shape, and `test/pullbacks/layerwise_seam.jl`
-  checks it against `Zygote`. The pullback as a whole does not: its two functors evaluate the value
-  as `pullback.loss(model, ps, input, output)` — four arguments — and `ParametricLoss` takes five,
-  with the system parameters last. Calling it raises, with the parameter types elided:
-
-  ```
-  MethodError: no method matching (::ParametricLoss)(::Chain{…}, ::NetworkParameters{…},
-      ::Tuple{Vector{Float64}, @NamedTuple{m::Float64, ω::Float64}}, ::Vector{Float64})
-  ```
-
-  So `train!` cannot take this pullback, and `SymbolicPullback(arch, ParametricLoss())` keeps
-  refusing a chain of more than one integrator. `ZygotePullback(ParametricLoss())` is what trains
-  such a network. A four-argument form of `ParametricLoss`, or a layerwise construction whose call
-  takes the system parameters, is what closes this.
-
-### K21 · A `(q, p)` pair reaches `batched`, which has no `NamedTuple` method.
-
-- **location:** `src/pullbacks/layerwise_seam.jl`
-- **kind:** upstream
-- **found:** 2026-10-27, in the layerwise seam
-- **evidence:**
-  `SymbolicNeuralNetworks`' layerwise sweep lays its input out with `batched`, which has methods for
-  an `AbstractVector`, an `AbstractMatrix`, any other `AbstractArray` and a `Tuple`, and none for a
-  `NamedTuple`. The `seam_interface` of that package names this as the batch that has to be laid
-  flat, and a `(q, p)` pair — the input form the parametric architectures of this package take — is
-  not one of them. With `pair = (q = rand(2, 1), p = rand(2, 1))` and one `μ`:
-
-  ```
-  MethodError: no method matching batched(::@NamedTuple{q::Matrix{Float64}, p::Matrix{Float64}})
-  ```
-
-  `SymbolicNeuralNetworks.seam_arguments` is reached after that call, so the pair never gets to the
-  seam this package declares for it. A `batched` method that stacks the two halves closes it.
 
 ## Raised while adding the parametric networks, not addressed
 

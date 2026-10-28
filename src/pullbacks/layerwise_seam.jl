@@ -1,15 +1,15 @@
-# How `SymplecticEuler` meets the seam of the layerwise `SymbolicPullback`.
+# How `SymplecticEuler` meets the seam of the layerwise sweep of `SymbolicNeuralNetworks`.
 #
-# `SymbolicNeuralNetworks` composes the pullback of a chain layer by layer, putting fresh symbolic
-# variables between two layers rather than inlining one layer's expression into the next, which keeps
-# the symbolic material a sum over layers rather than a product. By default that seam is one plain
-# vector — the state — so the construction assumes every layer maps an array to an array.
+# The sweep composes the pullback of a chain layer by layer, putting fresh symbolic variables between
+# two layers rather than inlining one layer's expression into the next, which keeps the symbolic
+# material a sum over layers rather than a product. By default that seam is one plain vector — the
+# state — so the construction assumes every layer maps an array to an array.
 #
 # A `SymplecticEuler` built with `return_parameters = true` does not: it threads the parameters of the
 # *system* on to the next layer, so it takes and returns the pair `(state, μ)`. The four functions
 # below say how it meets the seam, in the interface `SymbolicNeuralNetworks.seam_interface`
-# describes; a layer that declares none of them is declined, and the monolithic construction takes
-# over, which for a system with parameters does not build at all.
+# describes. `SymbolicPullback(arch, ParametricLoss())` hands the sweep a `2d × k` matrix of samples
+# and the vector of their `k` values of `μ`.
 
 # Whether the layer carries the parameters of the system across the seam is a property of its type,
 # because the sweep splats what `seam_arguments` returns into the generated kernels and that call
@@ -47,49 +47,14 @@ function SymbolicNeuralNetworks.state_expressions(
     SymbolicNeuralNetworks.scalar_expressions(first(y))
 end
 
-# The run-time counterpart of `seam_value`. Every data argument of a generated function has the
-# state's rank and batch size, so one set of parameters for the whole call is repeated under each
-# column of a matrix, as the forward pass does with them.
-function SymbolicNeuralNetworks.seam_arguments(integrator::SymplecticEuler, x::Tuple)
-    state = _seam_state(first(x))
-    _carries_parameters(integrator) ? (state, _seam_parameters(last(x), state)) : (state,)
-end
-
-# The state alone is a seam only for a system without parameters: the kernels of a layer that
-# carries them take the state and the flat parameters, and one data argument would be a `MethodError`
-# inside generated code, where the caller cannot see what is missing. Through the sweep the length
-# check of `_energy_input` raises first; this is the guard for a direct call.
-function SymbolicNeuralNetworks.seam_arguments(integrator::SymplecticEuler,
-        qp::Union{AbstractArray, NamedTupleOfArrays{<:Any, (:q, :p)}})
-    _carries_parameters(integrator) && throw(ArgumentError(
-        "the system of this `SymplecticEuler` has $(integrator.parameter_length) parameter(s), so " *
-        "the pullback has to be given `(state, system parameters)` rather than the state alone."))
-    (_seam_state(qp),)
-end
-
-# The seam holds the `dim` components of the state as one array, which is how the layer's own array
-# methods take the state too; a `(q, p)` pair is stacked as `assign_q_and_p` takes it apart again.
-_seam_state(qp::AbstractArray) = qp
-_seam_state(qp::NamedTupleOfArrays{<:Any, (:q, :p)}) = vcat(qp.q, qp.p)
-
-# The parameters of the system flattened in the element type of the state: `μ` arrives in whatever
-# precision it was written in, and a gradient that kept the precision of `μ` would not be the
-# state's.
-function _seam_parameters(parameters::OptionalParameters, state::AbstractVector)
-    first(GeometricMachineLearning._flatten_system_parameters(eltype(state), parameters))
-end
-
-function _seam_parameters(parameters::OptionalParameters, state::AbstractMatrix)
-    repeat(
-        first(GeometricMachineLearning._flatten_system_parameters(eltype(state), parameters)),
-        1, size(state, 2))
-end
-
-# `ParametricLoss` applies the loss in a five-argument form, so the layerwise construction cannot
-# guess an expression of the prediction and the target from it and would decline — falling back to
-# the monolithic construction, which for a parameter-dependent architecture does not build. The
-# declaration restates `_compute_loss`, which is the relation the loss's own functor makes, so the two
-# cannot drift.
-function SymbolicNeuralNetworks.loss_expression(::ParametricLoss, ŷ, y)
-    AbstractNeuralNetworks._compute_loss(ŷ, y)
+# The run-time counterpart of `seam_value`: every data argument of a generated function has one column
+# per sample, so the parameters of sample `i` are column `i` of the flat matrix, in the element type
+# of the state. `μ` arrives in whatever precision it was written in, and a gradient that kept the
+# precision of `μ` would not be the state's.
+function SymbolicNeuralNetworks.seam_arguments(
+        integrator::SymplecticEuler, (state, μs)::Tuple{<:AbstractMatrix, <:AbstractVector})
+    _carries_parameters(integrator) || return (state,)
+    flat = [first(GeometricMachineLearning._flatten_system_parameters(eltype(state), μ))
+            for μ in μs]
+    (state, reduce(hcat, flat))
 end

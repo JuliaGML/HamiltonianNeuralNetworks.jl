@@ -9,12 +9,12 @@ if "core" in GROUPS
     @safetestset "Forced generalized Hamiltonian Neural Network" include("architectures/forced_generalized_hamiltonian_neural_network_tests.jl")
     @safetestset "Symplectic Euler loss" include("loss/training_method_losses.jl")
     @safetestset "SymbolicPullback of HNNLoss is the gradient of the batched loss" include("pullbacks/symbolic_hnn_pullback.jl")
-    @safetestset "Symbolic pullback of a parametric generalized Hamiltonian network" include("pullbacks/symbolic_pghnn_pullback.jl")
-    @safetestset "Layerwise symbolic pullback of a generalized Hamiltonian network" include("pullbacks/layerwise_seam.jl")
     @safetestset "A loss takes a NetworkParameters" include("loss/losses.jl")
     @safetestset "train! with a Hamiltonian network" include("integration/train_with_symbolic_pullback.jl")
 end
 if "slow" in GROUPS
+    @safetestset "Symbolic pullback of a parametric generalized Hamiltonian network" include("pullbacks/symbolic_pghnn_pullback.jl")
+    @safetestset "Layerwise symbolic pullback of a generalized Hamiltonian network" include("pullbacks/layerwise_seam.jl")
     @safetestset "train! trains every architecture of the manual" include("integration/train_manual_architectures.jl")
     @safetestset "train! with a parametric generalized Hamiltonian network" include("integration/train_pghnn.jl")
 end

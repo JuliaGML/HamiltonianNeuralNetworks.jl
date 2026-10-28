@@ -1,20 +1,12 @@
 using Aqua
 using ExplicitImports
-using GeometricMachineLearning: ParametricLoss
 using HamiltonianNeuralNetworks
 using Test
 
 # Aqua's package-level checks, all eight, with an enclosing testset: `Aqua.test_all` adds none, so
 # without it the first failing check would end the file and hide the others.
-#
-# `ParametricLoss` is GeometricMachineLearning's type, and this package declares one method of
-# SymbolicNeuralNetworks' `loss_expression` on it — the layerwise `SymbolicPullback` cannot guess the
-# expression of a loss with five arguments, and the declaration belongs beside the loss it restates.
-# Aqua counts a method as piracy when neither the function it extends nor a type in its signature is
-# this package's, so that one type is named as this package's own; every other method is still
-# checked.
 @testset "Aqua" begin
-    Aqua.test_all(HamiltonianNeuralNetworks; piracies = (treat_as_own = [ParametricLoss],))
+    Aqua.test_all(HamiltonianNeuralNetworks)
 end
 
 # A `using` or an `import` that nothing needs keeps a dependency reachable from the module file, so
@@ -26,7 +18,6 @@ test_explicit_imports(HamiltonianNeuralNetworks;
 
 const NON_PUBLIC_QUALIFIED = (
     :TanhActivation, :dim, :Initializer,          # AbstractNeuralNetworks
-    :_compute_loss,                               # AbstractNeuralNetworks
     :Callable,                                    # Base
     :_flatten_system_parameters,                  # GeometricMachineLearning
     :concatenate_array_with_parameters,           # GeometricMachineLearning
@@ -37,6 +28,7 @@ const NON_PUBLIC_QUALIFIED = (
     :carried_variables, :seam_value,              # SymbolicNeuralNetworks
     :state_expressions, :seam_arguments,          # SymbolicNeuralNetworks
     :scalar_expressions, :loss_expression,        # SymbolicNeuralNetworks
+    :LayerwiseGradientFunction,                   # SymbolicNeuralNetworks
     :variables)                                   # Symbolics
 const NON_PUBLIC_IMPORTS = (
     :AbstractExplicitLayer, :Architecture,       # AbstractNeuralNetworks
