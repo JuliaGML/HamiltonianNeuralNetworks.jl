@@ -72,39 +72,6 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
 
 ## Raised while adding the parametric networks, not addressed
 
-### K17 · The `GeometricMachineLearning` compat bound admits the registered 0.8.0, which has none of the parametric names the package imports.
-
-- **location:** `Project.toml:22`
-- **kind:** defect
-- **found:** 2026-10-27, in the pre-pull-request verification of the parametric networks
-- **evidence:**
-  The package imports `ForcingLayer`, `ParametricLoss` and `apply_parametric` from
-  GeometricMachineLearning (`src/HamiltonianNeuralNetworks.jl:19`), and reaches
-  `_flatten_system_parameters`, `concatenate_array_with_parameters`, `assign_q_and_p` and
-  `_check_forcing_type` through the module's name. The registered 0.8.0 has six of those seven names
-  nowhere: its tree is `7616b841d9f7fca26df41a83ea8c2496ea31d25a`, which is this checkout's
-  `v0.8.0`, `git grep -l` finds `ForcingLayer`, `ParametricLoss`, `apply_parametric`,
-  `_flatten_system_parameters`, `concatenate_array_with_parameters` and `_check_forcing_type` at no
-  file under `v0.8.0:src/`, and `assign_q_and_p` is the one it has. A
-  resolve that chose that release therefore raises an `UndefVarError` on load. It cannot be seen
-  here, because `[sources]` takes GML from commit `2604f115` of its `main` branch, which declares
-  `version = "0.8.0"` and so satisfies the bound; a bound of `"0.9"` fails to resolve against it.
-  The bound therefore stays `"0.8"` until GML declares 0.9. It becomes `"0.9"` in the change that
-  removes `[sources]` from this file, once GML 0.9 is registered: the parametric API is GML 0.9's,
-  and a release against 0.8.0 has no such names to import.
-
-### K19 · The Downgrade job fails to build while `Project.toml` takes GeometricMachineLearning from a URL source.
-
-- **location:** `Project.toml:17`
-- **kind:** defect
-- **found:** #3
-- **evidence:**
-  `julia-downgrade-compat` logs `Found source package: GeometricMachineLearning (url=…)` and leaves
-  GML out of the dependencies it pins, and `julia-buildpkg` then stops with
-  `LoadError: could not find manifest entry for package with uuid 194d25b2-d3f5-49f0-af24-c124f4aa80cc`,
-  which is GML's. The job builds nothing, so it tests no lower bound. It is advisory
-  (`.github/workflows/CI.yml:25-27`), and it stays red until the change of K17 removes `[sources]`.
-
 ### K20 · `SymbolicPullback(arch, ParametricLoss())` raises a `MethodError` on a batch with one stacked array and one `(q, p)` pair.
 
 - **location:** `src/pullbacks/symbolic_hnn_pullback.jl:199`

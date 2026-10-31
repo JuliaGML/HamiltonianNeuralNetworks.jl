@@ -1,6 +1,6 @@
 using HamiltonianNeuralNetworks
-using GeometricMachineLearning: Batch, CPU, DataLoader, GradientMethod, NetworkLoss,
-                                NeuralNetwork, TrainingOptimizer, params, train!
+using GeometricMachineLearning: Batch, CPU, DataLoader, GradientMethod, NeuralNetwork,
+                                TrainingOptimizer, params, train!
 import AbstractNeuralNetworks
 using Test
 import Random
@@ -44,6 +44,10 @@ end
 #
 # Not numeric: the call selects a loss type, not a value, so this is not run over `REAL_ELTYPES`.
 @testset "train!'s default losses" begin
-    # a Hamiltonian network reaches the fallback
-    @test_throws ArgumentError NetworkLoss(StandardHamiltonianArchitecture(2, 4, 1), Batch(4))
+    # a Hamiltonian network has no default loss for a `Batch`: `train!` raises before any step
+    arch = StandardHamiltonianArchitecture(2, 4, 1)
+    dl = DataLoader(randn(2, 8), randn(2, 8); suppress_info = true)
+    nn = NeuralNetwork(arch, CPU(), Float64)
+    opt = TrainingOptimizer(params(nn); algorithm = GradientMethod(), linesearch = 0.1)
+    @test_throws ArgumentError train!(nn, opt, dl, Batch(8), 1; show_progress = false)
 end

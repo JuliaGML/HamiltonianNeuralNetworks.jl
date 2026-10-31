@@ -38,7 +38,7 @@ end
 
 # The layout of a system without parameters, `NullParameters()` and `NamedTuple()` alike.
 const _PARAMETER_FREE_LAYOUT = last(
-    GeometricMachineLearning._flatten_system_parameters(NullParameters()))
+    GeometricMachineLearning.flatten_system_parameters(NullParameters()))
 
 @doc raw"""
     SymbolicEnergy
@@ -72,7 +72,7 @@ function SymbolicEnergy(::Val{Kinetic}, dim::Integer, width::Integer, nhidden::I
     _check_dimension(dim)
     _check_nhidden(nhidden)
     _activation = Activation(activation)
-    flat_parameters, layout = GeometricMachineLearning._flatten_system_parameters(
+    flat_parameters, layout = GeometricMachineLearning.flatten_system_parameters(
         parameters)
     # A system whose parameters flatten to no entries has none, and the layout of none: the type of the
     # layout is what tells a step whether it carries the parameters across the seam of the layerwise
