@@ -42,7 +42,7 @@ struct ForcedGeneralizedHamiltonianArchitecture{FT, AT, PT <: OptionalParameters
         # GML's own guard, so that the refused set is the set `ForcingLayer` reads rather than a copy
         # of it. The architecture refuses a mistyped `forcing_type` at construction, before a `Chain`
         # exists.
-        GeometricMachineLearning._check_forcing_type(forcing_type)
+        GeometricMachineLearning.check_forcing_type(forcing_type)
         _activation = Activation(activation)
         new{forcing_type, typeof(_activation), typeof(parameters)}(
             Int(dim), Int(width), Int(nhidden), Int(n_forcing_layers), Int(n_integrators),

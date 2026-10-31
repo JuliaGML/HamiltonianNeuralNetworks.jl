@@ -153,7 +153,7 @@ function _parametric_gradient(
     symbolic_network = SymbolicNeuralNetwork(arch)
     model = symbolic_network.model
     symbolic_network_parameters = symbolic_network.params
-    flat_system_parameters, layout = GeometricMachineLearning._flatten_system_parameters(
+    flat_system_parameters, layout = GeometricMachineLearning.flatten_system_parameters(
         arch.parameters)
 
     state_dimension = input_dimension(model)

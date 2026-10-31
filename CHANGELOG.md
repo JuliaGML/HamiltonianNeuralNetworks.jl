@@ -20,7 +20,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   scripts load `DataLoader`, `Batch`, `train!` and the optimisers with
   `using GeometricMachineLearning: …`, never with a bare `using`, because GML exports the same
   names for its own copy of the architecture until it removes it. Until GML 0.9.0 is registered,
-  the package, its test, docs and scripts environments take GML at commit `2604f115` of its
+  the package, its test, docs and scripts environments take GML at commit `953914a1` of its
   `main` branch through `[sources]`.
 * **Tests in both precisions.** The tests of the architecture and of `SymplecticEulerLoss` run in
   `Float32` and `Float64` and assert the element type of the loss, the gradient and the training
@@ -94,7 +94,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 * **GeometricMachineLearning is a dependency.** The forced architecture is built from GML's
   `ForcingLayer`, and the parametric network trains through GML's `ParametricLoss` and
   `ParametricDataLoader`, so the package depends on GML rather than asking a caller to supply it.
-  It loads Zygote with it. Until GML 0.9.0 is registered, `[sources]` pins GML to commit `2604f115`
+  It loads Zygote with it. Until GML 0.9.0 is registered, `[sources]` pins GML to commit `953914a1`
   of its `main` branch, so a later push to `main` cannot move the tests or the docs. The advisory
   Downgrade job stays red while the URL source stands (K19 in KNOWN_ISSUES.md).
 * **GeometricBase supplies the parameters of the system.** `NullParameters` and

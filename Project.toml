@@ -14,7 +14,7 @@ SymbolicNeuralNetworks = "aed23131-dcd0-47ca-8090-d21e605652e3"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [sources]
-GeometricMachineLearning = {url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "2604f1158ebc1c9c8d26e4bda7d0bdfdecc35860"}
+GeometricMachineLearning = {url = "https://github.com/JuliaGNI/GeometricMachineLearning.jl", rev = "953914a1c33f4fda2b8b4d56cafce09a270e30e9"}
 
 [compat]
 AbstractNeuralNetworks = "0.9.2"

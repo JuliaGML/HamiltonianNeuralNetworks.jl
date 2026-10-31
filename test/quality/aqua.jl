@@ -19,10 +19,6 @@ test_explicit_imports(HamiltonianNeuralNetworks;
 const NON_PUBLIC_QUALIFIED = (
     :TanhActivation, :dim, :Initializer,          # AbstractNeuralNetworks
     :Callable,                                    # Base
-    :_flatten_system_parameters,                  # GeometricMachineLearning
-    :concatenate_array_with_parameters,           # GeometricMachineLearning
-    :assign_q_and_p,                              # GeometricMachineLearning
-    :_check_forcing_type,                         # GeometricMachineLearning
     :Jacobian, :symbolic_parameter_gradient,      # SymbolicNeuralNetworks
     :symbolic_differentials, :symbolic_derivative, # SymbolicNeuralNetworks
     :carried_variables, :seam_value,              # SymbolicNeuralNetworks

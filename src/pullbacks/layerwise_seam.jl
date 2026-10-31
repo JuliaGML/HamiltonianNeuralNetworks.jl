@@ -54,7 +54,7 @@ end
 function SymbolicNeuralNetworks.seam_arguments(
         integrator::SymplecticEuler, (state, μs)::Tuple{<:AbstractMatrix, <:AbstractVector})
     _carries_parameters(integrator) || return (state,)
-    flat = [first(GeometricMachineLearning._flatten_system_parameters(eltype(state), μ))
+    flat = [first(GeometricMachineLearning.flatten_system_parameters(eltype(state), μ))
             for μ in μs]
     (state, reduce(hcat, flat))
 end
