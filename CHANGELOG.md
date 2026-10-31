@@ -6,7 +6,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
-## [Unreleased] — targeting 0.1.0
+## [0.1.0] — 2026-11-01
 
 ### New Features
 
@@ -91,8 +91,9 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 ### Dependencies
 
 * **GeometricMachineLearning is a dependency.** The forced architecture is built from GML's
-  `ForcingLayer`, and the parametric network trains through GML's `ParametricLoss` and
-  `ParametricDataLoader`, so the package depends on GML rather than asking a caller to supply it.
+  `ForcingLayer`, and the parametric network trains through GML's `ParametricLoss` and its `train!`
+  on a `ParametricDataLoader`, which ReducedComplexityModeling defines, so the package depends on
+  GML rather than asking a caller to supply it.
   It loads Zygote with it. `[compat]` requires GML 0.9, which is the release that has the parametric
   API: the registered 0.8.0 has none of the names the package imports (K17). No `[sources]` entry
   remains, so the advisory Downgrade job no longer meets a URL source (K19).
