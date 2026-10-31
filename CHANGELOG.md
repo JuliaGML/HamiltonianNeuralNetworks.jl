@@ -19,9 +19,8 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 * **Training goes through GeometricMachineLearning by name.** The tests, the manual and the
   scripts load `DataLoader`, `Batch`, `train!` and the optimisers with
   `using GeometricMachineLearning: …`, never with a bare `using`, because GML exports the same
-  names for its own copy of the architecture until it removes it. Until GML 0.9.0 is registered,
-  the package, its test, docs and scripts environments take GML at commit `953914a1` of its
-  `main` branch through `[sources]`.
+  names for its own copy of the architecture until it removes it. The package, its test, docs and
+  scripts environments take the registered GML 0.9.
 * **Tests in both precisions.** The tests of the architecture and of `SymplecticEulerLoss` run in
   `Float32` and `Float64` and assert the element type of the loss, the gradient and the training
   history. The tests of the mixed GML files keep their Hamiltonian lines: the
@@ -94,9 +93,9 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 * **GeometricMachineLearning is a dependency.** The forced architecture is built from GML's
   `ForcingLayer`, and the parametric network trains through GML's `ParametricLoss` and
   `ParametricDataLoader`, so the package depends on GML rather than asking a caller to supply it.
-  It loads Zygote with it. Until GML 0.9.0 is registered, `[sources]` pins GML to commit `953914a1`
-  of its `main` branch, so a later push to `main` cannot move the tests or the docs. The advisory
-  Downgrade job stays red while the URL source stands (K19 in KNOWN_ISSUES.md).
+  It loads Zygote with it. `[compat]` requires GML 0.9, which is the release that has the parametric
+  API: the registered 0.8.0 has none of the names the package imports (K17). No `[sources]` entry
+  remains, so the advisory Downgrade job no longer meets a URL source (K19).
 * **GeometricBase supplies the parameters of the system.** `NullParameters` and
   `OptionalParameters` are what an architecture's `parameters` field and every parametric call take;
   GeometricBase owns both names, and reaching them from the package that defines them keeps
