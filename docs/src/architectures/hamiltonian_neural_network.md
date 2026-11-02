@@ -5,7 +5,7 @@ The Hamiltonian Neural Network (HNN) [greydanus2019hamiltonian](@cite) aims at b
 ```math
     X_H(z) = \mathbb{J}_{2d}\nabla_zH,
 ```
-where ``\mathbb{J}_{2d}`` is the [`PoissonTensor`](@extref GeometricMachineLearning.PoissonTensor) of GeometricMachineLearning. The idea behind a Hamiltonian neural network is to learn a vector field of this form, i.e. to learn:
+where ``\mathbb{J}_{2d} = \begin{pmatrix} \mathbb{O}_d & \mathbb{I}_d \\ -\mathbb{I}_d & \mathbb{O}_d \end{pmatrix}`` is the canonical Poisson tensor. The idea behind a Hamiltonian neural network is to learn a vector field of this form, i.e. to learn:
 
 ```math
     X_{\mathcal{NN}}(z) = \mathbb{J}_{2d}\nabla_z\mathcal{NN},

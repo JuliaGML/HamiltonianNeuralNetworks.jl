@@ -8,12 +8,12 @@ We first train a HNN [based on vector field data](@ref "HNN Loss for Vector Fiel
 
 ```@example hnn
 using HamiltonianNeuralNetworks
-using GeometricMachineLearning: Adam, Batch, DataLoader, NeuralNetwork, PoissonTensor,
-                                TrainingOptimizer, train!
+using GeometricMachineLearning: Adam, Batch, DataLoader, NeuralNetwork, TrainingOptimizer,
+                                train!
 import Random # hide
 Random.seed!(1234) # hide
 
-𝕁 = PoissonTensor(2)
+𝕁 = [0.0 1.0; -1.0 0.0] # the canonical Poisson tensor of ℝ²
 vf(z) = 𝕁 * z
 domain = [[q, p] for q in -1:.1:1 for p in -1:.1:1]
 vf_data = vf.(domain)
@@ -59,7 +59,7 @@ We now train a HNN on the same system [based on phase space data](@ref "HNN Loss
 
 ```@example hnn
 const Δt = .1
-next_matrix = exp(Δt * Matrix(𝕁)) * domain_matrix
+next_matrix = exp(Δt * 𝕁) * domain_matrix
 dl_pairs = DataLoader(domain_matrix, next_matrix)
 nothing # hide
 ```

@@ -79,7 +79,7 @@ type, and a zero residual gives a zero gradient.
 # The batch
 
 The pullback takes what a
-[`ParametricDataLoader`](@extref GeometricMachineLearning.ParametricDataLoader) draws: an input and
+[`ParametricDataLoader`](@extref ReducedComplexityModeling.ParametricDataLoader) draws: an input and
 an output of $2d \times 1 \times k$ with $k$ values of $\mu$, one per sample, or a `(q, p)` pair of
 $d \times 1 \times k$. A matrix with one $\mu$ is not one of the forms `apply_parametric` takes.
 
