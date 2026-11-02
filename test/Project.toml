@@ -17,8 +17,8 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 HamiltonianNeuralNetworks = {path = ".."}
 
 [compat]
-Aqua = "0.8"
+Aqua = "0.8.14"
 ExplicitImports = "1.15"
 SafeTestsets = "0.1"
 Test = "1"
-Zygote = "0.7"
+Zygote = "0.7.5"

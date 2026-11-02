@@ -8,6 +8,19 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 
 ## [Unreleased]
 
+### Dependencies
+
+* **Two test floors rise for the merged downgrade check.** CI resolves `Project.toml` and
+  `test/Project.toml` together at their lower bounds on Julia 1.12.
+  * `Zygote` `0.7` → `0.7.5`: Zygote 0.7.0–0.7.4 require ForwardDiff 0.10, and
+    GeometricMachineLearning 0.9 requires ForwardDiff 1. Zygote 0.7.5 is the first release that
+    allows ForwardDiff 1.
+  * `Aqua` `0.8` → `0.8.14`: Aqua 0.8.0 fails on Julia 1.12. Its piracy check reads the
+    `Core.TypeName` field `mt`, which Julia 1.12 removes, and its ambiguity check reports 102
+    ambiguities between Symbolics and Base, none of them in this package; its persistent-tasks check
+    fails as well. Aqua 0.8.9 limits the ambiguity check to the target package, and Aqua 0.8.14
+    completes the adaptation to the method tables of Julia 1.12. At 0.8.14 all eight checks pass.
+
 ### Documentation
 
 * **The manual builds against the registered GeometricMachineLearning 0.9.** The build failed
