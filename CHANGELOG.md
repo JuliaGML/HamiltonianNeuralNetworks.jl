@@ -6,6 +6,24 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
+## [Unreleased]
+
+### Documentation
+
+* **The manual builds against the registered GeometricMachineLearning 0.9.** The build failed
+  there: the tutorial called `PoissonTensor`, which GML 0.9 removes, and two `@extref` links named
+  `GeometricMachineLearning.PoissonTensor` and `GeometricMachineLearning.ParametricDataLoader`, which
+  GML's inventory does not hold. The tutorial now builds the canonical Poisson tensor of ℝ² as the
+  dense matrix `[0.0 1.0; -1.0 0.0]`, and its exact flow is `exp(Δt * 𝕁)`. The architecture page
+  writes the block matrix `J_2d` out instead of linking to `PoissonTensor`.
+* **`ParametricDataLoader` links to the package that owns it.** GML only imports it, so the
+  generalized-architecture page and the docstring of `SymbolicPullback(arch, ParametricLoss())` link
+  to `ReducedComplexityModeling.ParametricDataLoader`, and `docs/make.jl` gains a
+  ReducedComplexityModeling InterLinks entry.
+* **Both InterLinks entries target the `stable/` manuals.** The docs environment takes the registered
+  releases, not `main`. No code changes, and the docs environment gains no dependency.
+
+
 ## [0.1.0] — 2026-11-01
 
 ### New Features

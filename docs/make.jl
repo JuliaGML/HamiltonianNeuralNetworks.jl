@@ -3,11 +3,14 @@ using Documenter
 using DocumenterCitations
 using DocumenterInterLinks
 
-# The pages link into the manual of GeometricMachineLearning, which holds the data loader, the
-# training loop and the background on symplectic systems. Its `latest/` inventory is the one of its
-# `main` branch, which the docs environment takes GeometricMachineLearning from.
+# The pages link into the manual of GeometricMachineLearning, which holds the training loop, the
+# parametric loss and the background on symplectic systems, and into the manual of
+# ReducedComplexityModeling, which owns the data loaders that GeometricMachineLearning imports.
+# The docs environment takes the registered releases of both, so the links go to their `stable/`
+# manuals.
 links = InterLinks(
-    "GeometricMachineLearning" => "https://juliagni.github.io/GeometricMachineLearning.jl/latest/"
+    "GeometricMachineLearning" => "https://juliagni.github.io/GeometricMachineLearning.jl/stable/",
+    "ReducedComplexityModeling" => "https://juliarcm.github.io/ReducedComplexityModeling.jl/stable/"
 )
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "HamiltonianNeuralNetworks.bib"))

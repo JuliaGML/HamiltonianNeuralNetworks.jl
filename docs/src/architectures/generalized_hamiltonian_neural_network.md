@@ -23,7 +23,7 @@ Each energy network takes the parameters ``\mu`` of the *system* beside the stat
 so one network covers a range of problems instead of one problem instance. The forward pass is
 [`apply_parametric`](@extref GeometricMachineLearning.apply_parametric), reached as the functor
 `nn(x, μ)` of the `NeuralNetwork` built around the architecture, and a network trains on a
-[`ParametricDataLoader`](@extref GeometricMachineLearning.ParametricDataLoader) with
+[`ParametricDataLoader`](@extref ReducedComplexityModeling.ParametricDataLoader) with
 [`ParametricLoss`](@extref GeometricMachineLearning.ParametricLoss) — the default loss `train!` takes
 for that loader.
 
