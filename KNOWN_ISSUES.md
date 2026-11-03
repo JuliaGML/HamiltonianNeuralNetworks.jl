@@ -86,14 +86,17 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   they agree. This is a read of the tableaus, not a run. The link at line 25 was not fetched, and
   the name in that file is `SymplecticEulerBRK`, so the link target can be stale too.
 
-### K24 · The architecture page does not say that `HNNLoss` is relative.
+### K24 · The formula for `HNNLoss` on the architecture page has no denominator, and the page does not state the quotient.
 
 - **location:** `docs/src/architectures/hamiltonian_neural_network.md:20`
 - **kind:** docs
 - **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
 - **evidence:**
   The formula at line 20 has no denominator. `src/loss/hnn_loss.jl:41` computes
-  `norm(hvf(input, ps) - output) / norm(output)`. The signs of the formula agree with the loss.
+  `norm(loss.hvf(input, ps) - output) / norm(output)`. The docstring of `HNNLoss`, which the page
+  renders at line 50, does not state the quotient. The docstring of `SymplecticEulerLoss`, at line
+  51, says only that that loss is scale invariant "in the same way" `HNNLoss` is. The signs of the
+  formula agree with the loss.
 
 ## Upstream
 
