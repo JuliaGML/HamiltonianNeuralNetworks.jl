@@ -35,6 +35,11 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   ReducedComplexityModeling InterLinks entry.
 * **Both InterLinks entries target the `stable/` manuals.** The docs environment takes the registered
   releases, not `main`. No code changes, and the docs environment gains no dependency.
+* **The README example runs as pasted.** It used `input` and `output` without defining them. It
+  now builds them as the harmonic oscillator's vector field at 100 random states. The README also
+  says to add GeometricMachineLearning beside the package, because the example imports from it,
+  and links to the manual as well as to the tutorial. A `docs-stable` badge links to the manual of
+  the latest release.
 
 
 ## [0.1.0] — 2026-11-01
