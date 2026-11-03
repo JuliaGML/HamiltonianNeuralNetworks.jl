@@ -6,43 +6,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
-## [Unreleased]
-
-### Dependencies
-
-* **Two test floors rise for the merged downgrade check.** CI resolves `Project.toml` and
-  `test/Project.toml` together at their lower bounds on Julia 1.12.
-  * `Zygote` `0.7` → `0.7.5`: Zygote 0.7.0–0.7.4 require ForwardDiff 0.10, and
-    GeometricMachineLearning 0.9 requires ForwardDiff 1. Zygote 0.7.5 is the first release that
-    allows ForwardDiff 1.
-  * `Aqua` `0.8` → `0.8.14`: Aqua 0.8.0 fails on Julia 1.12. Its piracy check reads the
-    `Core.TypeName` field `mt`, which Julia 1.12 removes, and its ambiguity check reports 102
-    ambiguities between Symbolics and Base, none of them in this package; its persistent-tasks check
-    fails as well. Aqua 0.8.9 limits the ambiguity check to the target package, and Aqua 0.8.14
-    completes the adaptation to the method tables of Julia 1.12. At 0.8.14 all eight checks pass.
-
-### Documentation
-
-* **The manual builds against the registered GeometricMachineLearning 0.9.** The build failed
-  there: the tutorial called `PoissonTensor`, which GML 0.9 removes, and two `@extref` links named
-  `GeometricMachineLearning.PoissonTensor` and `GeometricMachineLearning.ParametricDataLoader`, which
-  GML's inventory does not hold. The tutorial now builds the canonical Poisson tensor of ℝ² as the
-  dense matrix `[0.0 1.0; -1.0 0.0]`, and its exact flow is `exp(Δt * 𝕁)`. The architecture page
-  writes the block matrix `J_2d` out instead of linking to `PoissonTensor`.
-* **`ParametricDataLoader` links to the package that owns it.** GML only imports it, so the
-  generalized-architecture page and the docstring of `SymbolicPullback(arch, ParametricLoss())` link
-  to `ReducedComplexityModeling.ParametricDataLoader`, and `docs/make.jl` gains a
-  ReducedComplexityModeling InterLinks entry.
-* **Both InterLinks entries target the `stable/` manuals.** The docs environment takes the registered
-  releases, not `main`. No code changes, and the docs environment gains no dependency.
-* **The README example runs as pasted.** It used `input` and `output` without defining them. It
-  now builds them as the harmonic oscillator's vector field at 100 random states. The README also
-  says to add GeometricMachineLearning beside the package, because the example imports from it,
-  and links to the manual as well as to the tutorial. A `docs-stable` badge links to the manual of
-  the latest release.
-
-
-## [0.1.0] — 2026-11-01
+## [0.1.0] — 2026-11-03
 
 ### New Features
 
@@ -142,3 +106,17 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   cannot install this version. The package is carved out of GeometricMachineLearning at that
   floor: the commit that creates it declares the 1.12 bound from the start, so 1.12 is where the
   package begins rather than a floor raised later.
+* **The test floors are Zygote 0.7.5 and Aqua 0.8.14.** CI resolves `Project.toml` and
+  `test/Project.toml` together at their lower bounds on Julia 1.12. Zygote 0.7.0–0.7.4 require
+  ForwardDiff 0.10, and GeometricMachineLearning 0.9 requires ForwardDiff 1. Aqua before 0.8.14
+  fails on the method tables of Julia 1.12.
+
+### Documentation
+
+* **The manual builds against the registered GeometricMachineLearning 0.9.** The tutorial writes
+  the canonical Poisson tensor of ℝ² as the dense matrix `[0.0 1.0; -1.0 0.0]`, and its exact flow
+  is `exp(Δt * 𝕁)`. The InterLinks entries target the `stable/` manuals of GeometricMachineLearning
+  and of ReducedComplexityModeling, which owns `ParametricDataLoader`.
+* **The README example runs as pasted.** It builds its data as the harmonic oscillator's vector
+  field at 100 random states. The README says to add GeometricMachineLearning beside the package,
+  because the example imports from it.
