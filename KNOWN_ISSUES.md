@@ -60,6 +60,18 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   473 is `Inf`, and every later epoch is `NaN`. One `train!` call of 500 epochs also ends in
   `NaN`. The tutorial trains 100 epochs and does not meet this batch.
 
+### K22 · No test checks that the Jacobian of the generalized Hamiltonian network's map is symplectic.
+
+- **location:** `test/architectures/generalized_hamiltonian_neural_network_tests.jl`
+- **kind:** missing test
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  `docs/src/architectures/generalized_hamiltonian_neural_network.md:17` calls the network a
+  symplectic map, and `grep -rnE "ForwardDiff|jacobian|transpose|𝕁" test` finds no test of
+  `Jᵀ 𝕁 J = 𝕁` for the Jacobian `J` of that map. The nearest test, "a symplectic-Euler step is the
+  gradient of its energy", checks one step against the gradient of its own energy: it covers the
+  form of a step, but neither the composed chain nor the Jacobian.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
