@@ -6,6 +6,18 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
+## [Unreleased] — targeting 0.1.1
+
+### Documentation
+
+* **The loss for phase space data has the signs of `SymplecticEulerLoss`.** The formula on the
+  architecture page has a minus before the finite difference of `q`, as the convention
+  `X_H = (∂H/∂p, -∂H/∂q)` gives, and the warning that recorded the wrong plus is gone. The page
+  states that the loss is relative to the norm of the finite difference, and names the two finite
+  differences in the sentence that ended in a colon.
+  `scripts/verification/symplectic_euler_loss_formula.jl` checks the signs against the loss.
+
+
 ## [0.1.0] — 2026-11-03
 
 ### New Features

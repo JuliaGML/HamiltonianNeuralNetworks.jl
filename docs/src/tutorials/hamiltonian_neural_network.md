@@ -193,7 +193,7 @@ loss_pairs = SymplecticEulerLoss(hnn_arch, Δt)
 nothing # hide
 ```
 
-[`HamiltonianNeuralNetworks.SymplecticEulerLoss`](@ref) defaults to the `:A` variant, which evaluates the vector field at ``(q^{(t+1)}, p^{(t)})``. Passing `variant = :B` evaluates it at ``(q^{(t)}, p^{(t+1)})`` instead, which is the variant the [loss formula](@ref "HNN Loss for Phase Space Data") is written for. That formula states the evaluation points of the `:B` variant; the warning beside it records that its sign differs from the implementation.
+[`HamiltonianNeuralNetworks.SymplecticEulerLoss`](@ref) defaults to the `:A` variant, which evaluates the vector field at ``(q^{(t+1)}, p^{(t)})``. Passing `variant = :B` evaluates it at ``(q^{(t)}, p^{(t+1)})`` instead, which is the variant the [loss formula](@ref "HNN Loss for Phase Space Data") is written for.
 
 ### Training
 
