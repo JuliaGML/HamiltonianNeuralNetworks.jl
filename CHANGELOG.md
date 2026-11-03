@@ -120,3 +120,8 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 * **The README example runs as pasted.** It builds its data as the harmonic oscillator's vector
   field at 100 random states. The README says to add GeometricMachineLearning beside the package,
   because the example imports from it.
+* **The tutorial explains each step and plots the learned Hamiltonian.** For both kinds of data it
+  overlays the contours of the learned Hamiltonian on the filled contours of the true one, and
+  prints the largest difference on the grid. It explains why the data fix the learned Hamiltonian
+  only up to a constant, and why the network trained on phase space data learns a Hamiltonian that
+  differs from the true one at order `Δt`.

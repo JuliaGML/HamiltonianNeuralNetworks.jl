@@ -45,6 +45,21 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   belongs with the data signatures of the losses as a whole: either each loss accepts only the data
   its vector field can take, or `(q, p)` data is converted before it reaches the field.
 
+### K21 · `HNNLoss` is `Inf` on a batch whose target vector field is zero, and the training never recovers.
+
+- **location:** `src/loss/hnn_loss.jl:41`
+- **kind:** defect
+- **found:** 2026-11-03, while the tutorial was extended (JuliaGML/HamiltonianNeuralNetworks.jl#11)
+- **evidence:**
+  The loss is `norm(hvf(input, ps) - output) / norm(output)`, so a batch whose targets are all zero
+  divides by zero. The vector field of a Hamiltonian system is zero at every equilibrium. On the
+  tutorial's data, a 21 × 21 grid of `[-1, 1]²` that holds the origin, `Batch(10)` leaves one
+  batch with a single sample each epoch, and that sample is the origin about once in 441 epochs.
+  `HNNLoss(arch)(nn.params, zeros(2, 1), zeros(2, 1))` returns `Inf`. Training the tutorial's
+  network under `Random.seed!(1234)` in calls of `train!` of 10 epochs each, the loss of epoch
+  473 is `Inf`, and every later epoch is `NaN`. One `train!` call of 500 epochs also ends in
+  `NaN`. The tutorial trains 100 epochs and does not meet this batch.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
