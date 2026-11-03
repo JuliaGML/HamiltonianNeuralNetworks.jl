@@ -31,7 +31,7 @@ For the second loss, we assume that the given data describe points in phase spac
 Note that this integrator is implicit in general.
 
 ```math
-\mathcal{L}_\mathrm{HNN} = \sqrt{\sum_t\sum_{i=1}^d \Big|\Big| \frac{\partial\mathcal{NN}}{\partial{}q_i}(q^{(t)}, p^{(t+1)}) + \frac{p_i^{(t+1)} - p_i^{(t)}}{\Delta{}t} \Big|\Big|_2^2 + \Big|\Big| \frac{\partial\mathcal{NN}}{\partial{}p_i}(q^{(t)}, p^{(t+1)}) - \frac{q_i^{(t+1)} - q_i^{(t)}}{\Delta{}t} \Big|\Big|_2^2}
+\mathcal{L}_\mathrm{HNN} = \sqrt{\sum_t\sum_{i=1}^d\left(\Big|\Big| \frac{\partial\mathcal{NN}}{\partial{}q_i}(q^{(t)}, p^{(t+1)}) + \frac{p_i^{(t+1)} - p_i^{(t)}}{\Delta{}t} \Big|\Big|_2^2 + \Big|\Big| \frac{\partial\mathcal{NN}}{\partial{}p_i}(q^{(t)}, p^{(t+1)}) - \frac{q_i^{(t+1)} - q_i^{(t)}}{\Delta{}t} \Big|\Big|_2^2\right)}
 ```
 
 Here the derivatives (i.e. vector field data) ``\dot{q}_i^{(t)}`` and ``\dot{p}_i^{(t)}`` are approximated with the finite differences ``(q_i^{(t+1)} - q_i^{(t)})/\Delta{}t`` and ``(p_i^{(t+1)} - p_i^{(t)})/\Delta{}t``.

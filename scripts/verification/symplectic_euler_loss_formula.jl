@@ -12,7 +12,6 @@
 
 using GeometricMachineLearning: NeuralNetwork, params
 using HamiltonianNeuralNetworks
-using LinearAlgebra: norm
 
 const Δt = 0.1
 const DIMENSION = 4

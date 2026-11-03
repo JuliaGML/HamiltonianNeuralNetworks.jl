@@ -12,9 +12,9 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 
 * **The loss for phase space data has the signs of `SymplecticEulerLoss`.** The formula on the
   architecture page has a minus before the finite difference of `q`, as the convention
-  `X_H = (∂H/∂p, -∂H/∂q)` gives, and the warning that recorded the wrong plus is gone. The page
-  states that the loss is relative to the norm of the finite difference, and names the two finite
-  differences in the sentence that ended in a colon.
+  `X_H = (∂H/∂p, -∂H/∂q)` gives, and the warning that recorded the wrong plus is gone. Both squared
+  norms lie under the two sums. The page states that the loss is relative to the norm of the
+  finite difference, and names the two finite differences in the sentence that ended in a colon.
   `scripts/verification/symplectic_euler_loss_formula.jl` checks the signs against the loss.
 
 
