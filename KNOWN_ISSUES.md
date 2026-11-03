@@ -72,6 +72,29 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   gradient of its energy", checks one step against the gradient of its own energy: it covers the
   form of a step, but neither the composed chain nor the Jacobian.
 
+### K23 · The architecture page names `SymplecticEulerB` for a loss evaluated where GeometricIntegrators' `SymplecticEulerA` evaluates.
+
+- **location:** `docs/src/architectures/hamiltonian_neural_network.md:25`
+- **kind:** docs
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  The formula at line 34 and the `:B` variant of `SymplecticEulerLoss` evaluate at
+  `(q^{(t)}, p^{(t+1)})`. GeometricIntegrators' `src/integrators/rk/methods.jl` defines
+  `SymplecticEulerARK` as explicit Euler for `q` and implicit Euler for `p`, and `SymplecticEulerBRK`
+  as the reverse. By these tableaus A evaluates at `(q^{(t)}, p^{(t+1)})` and B at
+  `(q^{(t+1)}, p^{(t)})`, so the letters of the two packages are swapped and line 25 reads as if
+  they agree. This is a read of the tableaus, not a run. The link at line 25 was not fetched, and
+  the name in that file is `SymplecticEulerBRK`, so the link target can be stale too.
+
+### K24 · The architecture page does not say that `HNNLoss` is relative.
+
+- **location:** `docs/src/architectures/hamiltonian_neural_network.md:20`
+- **kind:** docs
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  The formula at line 20 has no denominator. `src/loss/hnn_loss.jl:41` computes
+  `norm(hvf(input, ps) - output) / norm(output)`. The signs of the formula agree with the loss.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
