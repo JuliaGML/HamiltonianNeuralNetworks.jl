@@ -60,6 +60,44 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   473 is `Inf`, and every later epoch is `NaN`. One `train!` call of 500 epochs also ends in
   `NaN`. The tutorial trains 100 epochs and does not meet this batch.
 
+### K22 · No test checks that the Jacobian of the generalized Hamiltonian network's map is symplectic.
+
+- **location:** `test/architectures/generalized_hamiltonian_neural_network_tests.jl`
+- **kind:** missing test
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  `docs/src/architectures/generalized_hamiltonian_neural_network.md:17` calls the network a
+  symplectic map, and `grep -rnE "ForwardDiff|jacobian|transpose|𝕁" test` finds no test of
+  `Jᵀ 𝕁 J = 𝕁` for the Jacobian `J` of that map. The nearest test, "a symplectic-Euler step is the
+  gradient of its energy", checks one step against the gradient of its own energy: it covers the
+  form of a step, but neither the composed chain nor the Jacobian.
+
+### K23 · The architecture page names `SymplecticEulerB` for a loss evaluated where GeometricIntegrators' `SymplecticEulerA` evaluates.
+
+- **location:** `docs/src/architectures/hamiltonian_neural_network.md:25`
+- **kind:** docs
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  The formula at line 34 and the `:B` variant of `SymplecticEulerLoss` evaluate at
+  `(q^{(t)}, p^{(t+1)})`. GeometricIntegrators' `src/integrators/rk/methods.jl` defines
+  `SymplecticEulerARK` as explicit Euler for `q` and implicit Euler for `p`, and `SymplecticEulerBRK`
+  as the reverse. By these tableaus A evaluates at `(q^{(t)}, p^{(t+1)})` and B at
+  `(q^{(t+1)}, p^{(t)})`, so the letters of the two packages are swapped and line 25 reads as if
+  they agree. This is a read of the tableaus, not a run. The link at line 25 was not fetched, and
+  the name in that file is `SymplecticEulerBRK`, so the link target can be stale too.
+
+### K24 · The formula for `HNNLoss` on the architecture page has no denominator, and the page does not state the quotient.
+
+- **location:** `docs/src/architectures/hamiltonian_neural_network.md:20`
+- **kind:** docs
+- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
+- **evidence:**
+  The formula at line 20 has no denominator. `src/loss/hnn_loss.jl:41` computes
+  `norm(loss.hvf(input, ps) - output) / norm(output)`. The docstring of `HNNLoss`, which the page
+  renders at line 50, does not state the quotient. The docstring of `SymplecticEulerLoss`, at line
+  51, says only that that loss is scale invariant "in the same way" `HNNLoss` is. The signs of the
+  formula agree with the loss.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
