@@ -72,20 +72,6 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   gradient of its energy", checks one step against the gradient of its own energy: it covers the
   form of a step, but neither the composed chain nor the Jacobian.
 
-### K23 · The architecture page names `SymplecticEulerB` for a loss evaluated where GeometricIntegrators' `SymplecticEulerA` evaluates.
-
-- **location:** `docs/src/architectures/hamiltonian_neural_network.md:25`
-- **kind:** docs
-- **found:** 2026-11-04, while the sign of the loss on the architecture page was checked
-- **evidence:**
-  The formula at line 34 and the `:B` variant of `SymplecticEulerLoss` evaluate at
-  `(q^{(t)}, p^{(t+1)})`. GeometricIntegrators' `src/integrators/rk/methods.jl` defines
-  `SymplecticEulerARK` as explicit Euler for `q` and implicit Euler for `p`, and `SymplecticEulerBRK`
-  as the reverse. By these tableaus A evaluates at `(q^{(t)}, p^{(t+1)})` and B at
-  `(q^{(t+1)}, p^{(t)})`, so the letters of the two packages are swapped and line 25 reads as if
-  they agree. This is a read of the tableaus, not a run. The link at line 25 was not fetched, and
-  the name in that file is `SymplecticEulerBRK`, so the link target can be stale too.
-
 ### K24 · The formula for `HNNLoss` on the architecture page has no denominator, and the page does not state the quotient.
 
 - **location:** `docs/src/architectures/hamiltonian_neural_network.md:20`
@@ -97,6 +83,32 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   renders at line 50, does not state the quotient. The docstring of `SymplecticEulerLoss`, at line
   51, says only that that loss is scale invariant "in the same way" `HNNLoss` is. The signs of the
   formula agree with the loss.
+
+### K25 · The layers `SymplecticEulerA` and `SymplecticEulerB` use the letters for a half step, and the variants of `SymplecticEulerLoss` use them for a full step.
+
+- **location:** `src/architectures/generalized_hamiltonian_neural_network.jl:266`
+- **kind:** docs
+- **found:** 2026-11-04, while the letters of the symplectic Euler methods were settled
+- **evidence:**
+  `_step` of layer `SymplecticEulerA` moves `q` by the gradient of the kinetic energy and leaves `p`,
+  and layer `SymplecticEulerB` moves `p` by the gradient of the potential energy and leaves `q`.
+  Neither is a full step and neither takes a timestep. The layers are not exported. The pair A then
+  B of the architecture is Euler-A of Leimkuhler and Reich (2004) with a unit timestep. Under
+  `Random.seed!(1234)`:
+
+  ```julia
+  nn = NeuralNetwork(GeneralizedHamiltonianArchitecture(2; width = 8, nhidden = 2), CPU(), Float64)
+  ps = params(nn)
+  ∇T(p) = nn.model.layers[1].gradient_function(p, ps.L1)
+  ∇V(q) = nn.model.layers[2].gradient_function(q, ps.L2)
+  q₀, p₀ = [0.3], [-0.4]
+  q₁, p₁ = nn((q = q₀, p = p₀), NullParameters())
+  norm(vcat(q₁ - q₀ - ∇T(p₀), p₁ - p₀ + ∇V(q₁)))   # Euler-A: 7.9e-17
+  norm(vcat(q₁ - q₀ - ∇T(p₁), p₁ - p₀ + ∇V(q₀)))   # Euler-B: 0.065
+  ```
+
+  So layer `SymplecticEulerB` is not the method of variant `:B`, which the same spelling names at
+  `docs/src/architectures/hamiltonian_neural_network.md:28`.
 
 ## Upstream
 
