@@ -22,7 +22,7 @@ For the first loss, we assume that the given data describe the vector field of t
 
 ## HNN Loss for Phase Space Data
 
-For the second loss, we assume that the given data describe points in phase space associated to a Hamiltonian system. For this approach we also need to specify a *symplectic integrator* [hairer2006geometric](@cite) in order to train the neural network. In the following we use [SymplecticEulerB](https://juliagni.github.io/GeometricIntegrators.jl/latest/modules/integrators/#GeometricIntegrators.Integrators.SymplecticEulerB) to define this loss. This integrator does the following:
+For the second loss, we assume that the given data describe points in phase space associated to a Hamiltonian system. For this approach we also need to specify a *symplectic integrator* [hairer2006geometric](@cite) in order to train the neural network. In the following we use the symplectic Euler-B method of Leimkuhler and Reich, *Simulating Hamiltonian Dynamics* (2004), Eqs. (4.6)-(4.7), to define this loss. Hairer, Lubich and Wanner give the same method without a letter, as the left formula of their Eq. (VI.3.1). This integrator does the following:
 
 ```math
 \mathrm{SymplecticEulerB}: (q^{(t)}, p^{(t)}) \mapsto (q^{(t+1)}, p^{(t+1)})

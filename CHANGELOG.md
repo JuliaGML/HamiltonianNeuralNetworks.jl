@@ -16,6 +16,13 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   norms lie under the two sums. The page states that the loss is relative to the norm of the
   finite difference, and names the two finite differences in the sentence that ended in a colon.
   `scripts/verification/symplectic_euler_loss_formula.jl` checks the signs against the loss.
+* **The letters of `SymplecticEulerLoss` are named by their source (K23).** Its variants and the
+  architecture page already follow Leimkuhler and Reich, *Simulating Hamiltonian Dynamics* (2004),
+  Eqs. (4.6)-(4.9), so nothing changes for a caller. The letters of GeometricIntegrators were the
+  swapped ones, and that package and GeometricIntegratorsBase change. The page cites the book in
+  place of a link into GeometricIntegrators.
+  `scripts/verification/symplectic_euler_loss_letters.jl` measures each variant on a non-separable
+  Hamiltonian.
 
 
 ## [0.1.0] — 2026-11-03
