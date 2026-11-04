@@ -18,9 +18,10 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
   `scripts/verification/symplectic_euler_loss_formula.jl` checks the signs against the loss.
 * **The letters of `SymplecticEulerLoss` are named by their source (K23).** Its variants and the
   architecture page already follow Leimkuhler and Reich, *Simulating Hamiltonian Dynamics* (2004),
-  Eqs. (4.6)-(4.9), so nothing changes for a caller. The letters of GeometricIntegrators were the
-  swapped ones, and that package and GeometricIntegratorsBase change. The page cites the book in
-  place of a link into GeometricIntegrators.
+  Eqs. (4.6)-(4.9), so nothing changes for a caller. GeometricIntegrators and
+  GeometricIntegratorsBase carry the swapped letters; JuliaGNI/GeometricIntegrators.jl#279 and
+  JuliaGNI/GeometricIntegratorsBase.jl#63 swap them. The page cites the book in place of a link into
+  GeometricIntegrators.
   `scripts/verification/symplectic_euler_loss_letters.jl` measures each variant on a non-separable
   Hamiltonian.
 

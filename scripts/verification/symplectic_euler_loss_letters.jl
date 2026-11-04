@@ -42,7 +42,7 @@ zA, zB = euler_a(z₀, h), euler_b(z₀, h)
 δ = 1e-5
 mixed = (X(z₀ + [0, δ])[2] - X(z₀ - [0, δ])[2]) / (2δ)
 println("-H_qp at z₀ = ", mixed, " (zero for a separable H)")
-abs(mixed) > 1e-3 || error("the network is separable at z₀, so the check says nothing")
+abs(mixed) > 1e-3 || error("the network is separable at z₀, not the general case")
 
 @printf("%-10s %14s %14s\n", "variant", "on Euler-A", "on Euler-B")
 function loss(v, z)

@@ -84,6 +84,32 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   51, says only that that loss is scale invariant "in the same way" `HNNLoss` is. The signs of the
   formula agree with the loss.
 
+### K25 · The layers `SymplecticEulerA` and `SymplecticEulerB` use the letters for a half step, and the variants of `SymplecticEulerLoss` use them for a full step.
+
+- **location:** `src/architectures/generalized_hamiltonian_neural_network.jl:266`
+- **kind:** docs
+- **found:** 2026-11-04, while the letters of the symplectic Euler methods were settled
+- **evidence:**
+  `_step` of layer `SymplecticEulerA` moves `q` by the gradient of the kinetic energy and leaves `p`,
+  and layer `SymplecticEulerB` moves `p` by the gradient of the potential energy and leaves `q`.
+  Neither is a full step and neither takes a timestep. The layers are not exported. The pair A then
+  B of the architecture is Euler-A of Leimkuhler and Reich (2004) with a unit timestep. Under
+  `Random.seed!(1234)`:
+
+  ```julia
+  nn = NeuralNetwork(GeneralizedHamiltonianArchitecture(2; width = 8, nhidden = 2), CPU(), Float64)
+  ps = params(nn)
+  ∇T(p) = nn.model.layers[1].gradient_function(p, ps.L1)
+  ∇V(q) = nn.model.layers[2].gradient_function(q, ps.L2)
+  q₀, p₀ = [0.3], [-0.4]
+  q₁, p₁ = nn((q = q₀, p = p₀), NullParameters())
+  norm(vcat(q₁ - q₀ - ∇T(p₀), p₁ - p₀ + ∇V(q₁)))   # Euler-A: 7.9e-17
+  norm(vcat(q₁ - q₀ - ∇T(p₁), p₁ - p₀ + ∇V(q₀)))   # Euler-B: 0.065
+  ```
+
+  So layer `SymplecticEulerB` is not the method of variant `:B`, which the same spelling names at
+  `docs/src/architectures/hamiltonian_neural_network.md:28`.
+
 ## Upstream
 
 ### K16 · `train!` on a `Float32` `(q, p)` `ParametricDataLoader` returns a `Float64` history.
@@ -126,16 +152,3 @@ What is known to be wrong in HamiltonianNeuralNetworks and is not fixed.
   input with a pair output and on the reverse, and the layerwise pullback on a stacked input with a
   pair output, each raise `MethodError: no method matching (::SymbolicPullback{ParametricLoss, …})`.
   A `ParametricDataLoader` gives one form for both arrays, so only a hand-built batch reaches it.
-
-### K25 · The layers `SymplecticEulerA` and `SymplecticEulerB` use the letters for a half step, and the variants of `SymplecticEulerLoss` use them for a full step.
-
-- **location:** `src/architectures/generalized_hamiltonian_neural_network.jl`
-- **kind:** docs
-- **found:** 2026-11-04, while the letters of the symplectic Euler methods were settled
-- **evidence:**
-  `_step` of layer `SymplecticEulerA` moves `q` by the gradient of the kinetic energy and leaves `p`,
-  and layer `SymplecticEulerB` moves `p` by the gradient of the potential energy and leaves `q`.
-  Neither is a full step and neither takes a timestep. The layers are not exported. The pair A then
-  B of the architecture is Euler-A of Leimkuhler and Reich (2004), read from the code, not run. So
-  layer `SymplecticEulerB` is not the method of variant `:B`, which the same spelling names on the
-  architecture page.
