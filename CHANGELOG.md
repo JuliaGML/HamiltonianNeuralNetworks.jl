@@ -6,7 +6,7 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
-## [Unreleased] — targeting 0.2.0
+## [0.2.0] — 2026-11-24
 
 ### Breaking Changes
 

@@ -1,6 +1,6 @@
 name = "HamiltonianNeuralNetworks"
 uuid = "854b1a03-e837-4b0e-807d-c0747ccaff92"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Michael Kraus <michael.kraus@ipp.mpg.de>"]
 
 [deps]
