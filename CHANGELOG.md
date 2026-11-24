@@ -6,7 +6,22 @@ This package is pre-1.0, so every minor release is potentially breaking in the s
 [SemVer](https://semver.org) for `0.x` versions.
 
 
-## [Unreleased] — targeting 0.1.1
+## [Unreleased] — targeting 0.2.0
+
+### Breaking Changes
+
+* **AbstractNeuralNetworks 0.10, SymbolicNeuralNetworks 0.10 and GeometricMachineLearning 0.10
+  are required.** `[compat]` takes `AbstractNeuralNetworks = "0.10"`,
+  `SymbolicNeuralNetworks = "0.10"` and `GeometricMachineLearning = "0.10"`, and accepts no 0.9
+  release of any of them; the scripts environment takes GeometricMachineLearning 0.10 too. These
+  releases move to KernelAbstractions 0.10, so an environment that holds KernelAbstractions 0.9, or
+  a 0.9 release of one of the three packages, cannot install this version. The `Symbolics` floor
+  rises from `"7"` to `"7.0.2"`, the floor that SymbolicNeuralNetworks 0.10 sets, so no environment
+  that installs this version changes. A compat-only change:
+  no source, test, docs or script line changes. The package never names `GPU`, which
+  AbstractNeuralNetworks 0.10 and GeometricMachineLearning 0.10 no longer export, nor
+  `CPU(; static = true)` or the renamed `WeightTiedSymplecticAutoencoder`, and it builds its
+  networks on `CPU()`, which still defaults to `Float64`.
 
 ### Documentation
 
